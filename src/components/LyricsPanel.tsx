@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from "react"
-import { AlertCircle, Music, Play, Sparkles, ListMusic, Minimize2 } from "lucide-react"
+import { AlertCircle, Music, Play, Sparkles, ListMusic, Minimize2, ChevronDown } from "lucide-react"
 import { Song, usePlayerStore } from "@/store/usePlayerStore"
 import { useQuery } from "@tanstack/react-query"
 
@@ -183,20 +183,30 @@ function LyricsContent({ currentSong, isPlaying, toggleLyrics }: LyricsContentPr
     <>
       {/* ── PREMIUM HEADER (Center title, floating control widgets) ── */}
       <div className="flex items-center justify-between px-4 md:px-8 py-4 md:py-6 bg-gradient-to-b from-black/20 to-transparent backdrop-blur-sm border-b border-white/5 flex-shrink-0 relative z-10">
-        {/* Left Side: Track details */}
-        {currentSong && (
-          <div className="flex items-center gap-4">
-            <img
-              src={currentSong.image}
-              alt={currentSong.name}
-              className="w-11 h-11 rounded-xl object-cover border border-white/10 shadow-2xl scale-100 hover:scale-105 transition-transform duration-300"
-            />
-            <div className="min-w-0">
-              <h4 className="font-black text-white truncate text-base leading-none tracking-tight">{currentSong.name}</h4>
-              <p className="text-xs text-white/60 truncate mt-1.5 font-bold tracking-wide uppercase">{currentSong.artist}</p>
+        {/* Left Side: Back Button (Mobile) & Track details */}
+        <div className="flex items-center gap-3 md:gap-4 min-w-0">
+          <button
+            onClick={toggleLyrics}
+            className="md:hidden w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 text-white/80 hover:text-white flex items-center justify-center border border-white/10 flex-shrink-0"
+            title="Go Back"
+          >
+            <ChevronDown size={20} />
+          </button>
+
+          {currentSong && (
+            <div className="flex items-center gap-3 min-w-0">
+              <img
+                src={currentSong.image}
+                alt={currentSong.name}
+                className="w-10 h-10 md:w-11 md:h-11 rounded-xl object-cover border border-white/10 shadow-2xl scale-100 hover:scale-105 transition-transform duration-300 flex-shrink-0"
+              />
+              <div className="min-w-0">
+                <h4 className="font-black text-white truncate text-sm md:text-base leading-none tracking-tight">{currentSong.name}</h4>
+                <p className="text-[10px] md:text-xs text-white/60 truncate mt-1 md:mt-1.5 font-bold tracking-wide uppercase">{currentSong.artist}</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Center: Mode Tabs */}
         {syncedLines.length > 0 && !loading && !error && (
@@ -235,7 +245,7 @@ function LyricsContent({ currentSong, isPlaying, toggleLyrics }: LyricsContentPr
           )}
           <button
             onClick={toggleLyrics}
-            className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/15 text-white/80 hover:text-white flex items-center justify-center border border-white/10 hover:border-white/20 transition-all duration-300 hover:scale-105 active:scale-95 shadow-xl"
+            className="hidden md:flex w-10 h-10 rounded-full bg-white/5 hover:bg-white/15 text-white/80 hover:text-white items-center justify-center border border-white/10 hover:border-white/20 transition-all duration-300 hover:scale-105 active:scale-95 shadow-xl"
             title="Minimize Lyrics (Esc)"
           >
             <Minimize2 size={16} />
