@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String           @id @default(cuid())
+  email          String           @unique
+  name           String?
+  password       String?          // Hashed password for email/password credentials
+  image          String?
+  createdAt      DateTime         @default(now())
+  likedSongs     LikedSong[]
+  playlists      Playlist[]
+  recentlyPlayed RecentlyPlayed[]
+}
+
+model LikedSong {
+  id        String   @id @default(cuid())
+  userId    String
+  songId    String
+  songName  String
+  artist    String
+  image     String
+  streamUrl String
+  duration  Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Playlist {
+  id        String         @id @default(cuid())
+  userId    String
+  name      String
+  image     String?
+  createdAt DateTime       @default(now())
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  songs     PlaylistSong[]
+}
+
+model PlaylistSong {
+  id         String   @id @default(cuid())
+  playlistId String
+  songId     String
+  songName   String
+  artist     String
+  image      String
+  streamUrl  String
+  duration   Int
+  order      Int
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+}
+
+model RecentlyPlayed {
+  id        String   @id @default(cuid())
+  userId    String
+  songId    String
+  songName   String
+  artist    String
+  image     String
+  streamUrl String
+  playedAt  DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

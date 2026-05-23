@@ -1,0 +1,717 @@
+export interface RawSong {
+  id: string
+  name: string
+  subtitle?: string
+  image: { quality: string; link: string }[]
+  download_url: { quality: string; link: string }[]
+  duration?: string | number
+  play_count?: string | number
+  has_lyrics?: boolean | string
+  year?: string | number
+  language?: string
+  url?: string
+}
+
+export interface FormattedSong {
+  id: string
+  name: string
+  artist: string
+  image: string
+  streamUrl: string
+  duration: number
+  playCount?: string | number
+  year?: string | number
+  url?: string
+  downloadUrls?: { quality: string; link: string }[]
+}
+
+export function formatSong(raw: RawSong): FormattedSong {
+  // Use image[2] (500x500) if available, fallback to last image
+  let image = ""
+  if (raw.image && raw.image.length > 0) {
+    image = raw.image[2]?.link || raw.image[raw.image.length - 1]?.link || ""
+  }
+
+  // Use download_url[4] (320kbps) if available, fallback to last download url
+  let streamUrl = ""
+  if (raw.download_url && raw.download_url.length > 0) {
+    streamUrl = raw.download_url[4]?.link || raw.download_url[raw.download_url.length - 1]?.link || ""
+  }
+
+  // Ensure duration is numeric
+  const duration = typeof raw.duration === 'string' ? parseInt(raw.duration, 10) : (raw.duration || 0)
+
+  return {
+    id: raw.id,
+    name: raw.name,
+    artist: raw.subtitle || "Unknown Artist",
+    image: image.replace("http://", "https://"), // Secure the URL if it is http
+    streamUrl: streamUrl.replace("http://", "https://"),
+    duration: isNaN(duration) ? 0 : duration,
+    playCount: raw.play_count || 0,
+    year: raw.year || "",
+    url: raw.url || "",
+    downloadUrls: raw.download_url || []
+  }
+}
+
+interface CacheEntry {
+  data: any
+  expiry: number
+}
+
+const memoryCache = new Map<string, CacheEntry>()
+const CACHE_TTL_MS = 60 * 60 * 1000 // 60 minutes cache (1 hour)
+
+function getCachedData(key: string): any | null {
+  const entry = memoryCache.get(key)
+  if (!entry) return null
+  if (Date.now() > entry.expiry) {
+    memoryCache.delete(key)
+    return null
+  }
+  return entry.data
+}
+
+function setCachedData(key: string, data: any): void {
+  memoryCache.set(key, {
+    data,
+    expiry: Date.now() + CACHE_TTL_MS
+  })
+}
+
+const BASE_URL = process.env.MUSIC_API_URL || "https://my-repo-kohl-eta.vercel.app"
+const API_TIMEOUT_MS = 10000 // 10-second timeout for all API calls
+
+export const FALLBACK_TRENDING_SONGS: FormattedSong[] = [
+  {
+    id: "fallback_1",
+    name: "Midnight City (Vibe)",
+    artist: "M83 & Chillwave",
+    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400&auto=format&fit=crop",
+    streamUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+    duration: 372,
+    playCount: "4,500,210",
+    year: "2024"
+  },
+  {
+    id: "fallback_2",
+    name: "Summer Horizon",
+    artist: "Sunset Dreamer",
+    image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400&auto=format&fit=crop",
+    streamUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+    duration: 425,
+    playCount: "3,812,442",
+    year: "2024"
+  },
+  {
+    id: "fallback_3",
+    name: "Neon Lights (Retro)",
+    artist: "Synthwave Dynamic",
+    image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=400&auto=format&fit=crop",
+    streamUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+    duration: 302,
+    playCount: "8,921,104",
+    year: "2023"
+  },
+  {
+    id: "fallback_4",
+    name: "Acoustic Morning",
+    artist: "Indie Folk Band",
+    image: "https://images.unsplash.com/photo-1510915228340-29c85a43dcfe?q=80&w=400&auto=format&fit=crop",
+    streamUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+    duration: 302,
+    playCount: "1,987,332",
+    year: "2024"
+  },
+  {
+    id: "fallback_5",
+    name: "Liquid Drum & Bass",
+    artist: "EDM Legends",
+    image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=400&auto=format&fit=crop",
+    streamUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+    duration: 362,
+    playCount: "12,431,098",
+    year: "2024"
+  },
+  {
+    id: "fallback_6",
+    name: "Rainy Day Lo-Fi",
+    artist: "Lofi Beats Chill",
+    image: "https://images.unsplash.com/photo-1515462277126-270d878326e5?q=80&w=400&auto=format&fit=crop",
+    streamUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
+    duration: 240,
+    playCount: "25,321,990",
+    year: "2023"
+  }
+]
+
+export async function fetchTrending() {
+  const cacheKey = "trending"
+  const cached = getCachedData(cacheKey)
+  if (cached) return cached
+
+  try {
+    const res = await fetch(`${BASE_URL}/get/trending?type=song&lang=hindi`, {
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
+      next: { revalidate: 3600 }
+    })
+    if (!res.ok) throw new Error("Status code not OK")
+    const data = await res.json()
+    
+    const raw: (RawSong & { type: string })[] = data.data || []
+    const rawSongs = raw.filter((item) => item.type === "song" || item.download_url)
+    const result = rawSongs.map(formatSong)
+    
+    if (result.length === 0) {
+      throw new Error("Empty trending results returned")
+    }
+    
+    setCachedData(cacheKey, result)
+    return result
+  } catch (error) {
+    console.warn("Failed to fetch trending songs from API. Serving premium fallbacks:", error)
+    // Cache the fallbacks for 1 minute so we don't spam the failing endpoint
+    memoryCache.set(cacheKey, {
+      data: FALLBACK_TRENDING_SONGS,
+      expiry: Date.now() + 60 * 1000
+    })
+    return FALLBACK_TRENDING_SONGS;
+  }
+}
+
+export async function searchSongs(query: string, type?: "all" | "songs", lang = "hindi") {
+  const cacheKey = `search:${query}:${type || "all"}:${lang}`
+  const cached = getCachedData(cacheKey)
+  if (cached) return cached
+
+  // Graceful fetch with short timeout to prevent slow dependencies from blocking the search UI
+  const fetchWithTimeout = async (url: string, timeoutMs: number) => {
+    try {
+      const res = await fetch(url, {
+        signal: AbortSignal.timeout(timeoutMs),
+        next: { revalidate: 600 }
+      })
+      if (!res.ok) return null
+      return res.json()
+    } catch (e) {
+      console.warn(`Search query to ${url} failed or timed out:`, e)
+      return null
+    }
+  }
+
+  // Fetch specialized endpoints in parallel with tight, protective timeouts!
+  // If we only need songs, skip fetching albums and artists to save precious bandwidth and API limits
+  const fetchAlbums = type !== "songs"
+  const fetchArtists = type !== "songs"
+
+  const langQuery = lang && lang !== "all" ? `&lang=${lang}` : ""
+
+  const [songsJson, albumsJson, artistsJson] = await Promise.all([
+    fetchWithTimeout(`${BASE_URL}/search/songs?q=${encodeURIComponent(query)}${langQuery}`, 8000),
+    fetchAlbums ? fetchWithTimeout(`${BASE_URL}/search/albums?q=${encodeURIComponent(query)}${langQuery}`, 8000) : Promise.resolve(null),
+    fetchArtists ? fetchWithTimeout(`${BASE_URL}/search/artists?q=${encodeURIComponent(query)}${langQuery}`, 8000) : Promise.resolve(null)
+  ])
+
+  interface RawAlbumResult {
+    id: string
+    name?: string
+    title?: string
+    subtitle?: string
+    description?: string
+    image?: { quality: string; link: string }[]
+    url?: string
+    link?: string
+  }
+
+  interface RawArtistResult {
+    id: string
+    name?: string
+    title?: string
+    role?: string
+    subtitle?: string
+    image?: { quality: string; link: string }[]
+    url?: string
+    link?: string
+  }
+
+  const rawSongs = songsJson?.data?.results || []
+  const rawAlbums: RawAlbumResult[] = albumsJson?.data?.results || []
+  const rawArtists: RawArtistResult[] = artistsJson?.data?.results || []
+
+  const result = {
+    songs: rawSongs.map(formatSong),
+    albums: rawAlbums.map((alb) => ({
+      id: alb.id,
+      name: alb.name || alb.title,
+      artist: alb.subtitle || alb.description || "Album",
+      image: (alb.image && alb.image[2]?.link) || (alb.image && alb.image[alb.image.length - 1]?.link) || "",
+      link: alb.url || alb.link || "",
+    })),
+    artists: rawArtists.map((art) => ({
+      id: art.id,
+      name: art.name || art.title,
+      artist: art.role || art.subtitle || "Artist",
+      image: (art.image && art.image[2]?.link) || (art.image && art.image[art.image.length - 1]?.link) || "",
+      link: art.url || art.link || "",
+    })),
+  }
+  setCachedData(cacheKey, result)
+  return result
+}
+
+function cleanJioSaavnLink(link: string): string {
+  if (!link) return ""
+  return link.replace("internal-site.jiosaavn.com/s/", "www.jiosaavn.com/")
+}
+
+export async function fetchAlbumDetails(link: string) {
+  const cacheKey = `album:${link}`
+  const cached = getCachedData(cacheKey)
+  if (cached) return cached
+
+  const cleaned = cleanJioSaavnLink(link)
+  const res = await fetch(`${BASE_URL}/album?link=${encodeURIComponent(cleaned)}`, {
+    signal: AbortSignal.timeout(API_TIMEOUT_MS),
+    next: { revalidate: 3600 }
+  })
+  if (!res.ok) throw new Error("Failed to fetch album details")
+  const json = await res.json()
+  const data = json.data || {}
+
+  const rawSongs: RawSong[] = data.songs || []
+  const songs = rawSongs.map(formatSong)
+
+  const albumImage = (data.image && data.image[2]?.link) || (data.image && data.image[data.image.length - 1]?.link) || ""
+
+  const result = {
+    id: data.id,
+    name: data.name || data.title,
+    artist: data.subtitle || data.artist || "Various Artists",
+    year: data.year || "",
+    image: albumImage,
+    songs,
+    songCount: songs.length,
+  }
+  setCachedData(cacheKey, result)
+  return result
+}
+
+export async function fetchArtistDetails(link: string) {
+  const cacheKey = `artist:${link}`
+  const cached = getCachedData(cacheKey)
+  if (cached) return cached
+
+  const cleaned = cleanJioSaavnLink(link)
+  const res = await fetch(`${BASE_URL}/artist?link=${encodeURIComponent(cleaned)}`, {
+    signal: AbortSignal.timeout(API_TIMEOUT_MS),
+    next: { revalidate: 3600 }
+  })
+  if (!res.ok) throw new Error("Failed to fetch artist details")
+  const json = await res.json()
+  const data = json.data || {}
+
+  // Artist data contains top songs and albums (check both snake_case from proxy and fallback)
+  const rawSongs: RawSong[] = data.top_songs || data.songs || []
+  const topSongs = rawSongs.map(formatSong)
+
+  interface ArtistAlbumResult {
+    id: string
+    name?: string
+    title?: string
+    year?: string | number
+    image?: { quality: string; link: string }[]
+    link?: string
+    url?: string
+  }
+
+  const rawAlbums: ArtistAlbumResult[] = data.top_albums || data.albums || []
+  const albums = rawAlbums.map((alb) => ({
+    id: alb.id,
+    name: alb.name || alb.title,
+    year: alb.year || "",
+    image: (alb.image && alb.image[2]?.link) || (alb.image && alb.image[alb.image.length - 1]?.link) || "",
+    link: alb.link || alb.url || "",
+  }))
+
+  const artistImage = (data.image && data.image[2]?.link) || (data.image && data.image[data.image.length - 1]?.link) || ""
+
+  const result = {
+    id: data.id,
+    name: data.name,
+    image: artistImage,
+    topSongs,
+    albums,
+  }
+  setCachedData(cacheKey, result)
+  return result
+}
+
+export async function fetchPlaylistDetails(link: string) {
+  const cacheKey = `playlist:${link}`
+  const cached = getCachedData(cacheKey)
+  if (cached) return cached
+
+  const cleaned = cleanJioSaavnLink(link)
+  const res = await fetch(`${BASE_URL}/playlist?link=${encodeURIComponent(cleaned)}`, {
+    signal: AbortSignal.timeout(API_TIMEOUT_MS),
+    next: { revalidate: 3600 }
+  })
+  if (!res.ok) throw new Error("Failed to fetch playlist details")
+  const json = await res.json()
+  const data = json.data || {}
+
+  const rawSongs: RawSong[] = data.songs || []
+  const songs = rawSongs.map(formatSong)
+
+  const playlistImage = (data.image && data.image[2]?.link) || (data.image && data.image[data.image.length - 1]?.link) || ""
+
+  const result = {
+    id: data.id,
+    name: data.name || data.title,
+    image: playlistImage,
+    songs,
+  }
+  setCachedData(cacheKey, result)
+  return result
+}
+
+export const FALLBACK_TRENDING_ALBUMS = [
+  {
+    id: "fallback_alb_1",
+    name: "Chilled Electronic",
+    artist: "Synthwave / Chill",
+    image: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?q=80&w=400&auto=format&fit=crop",
+    link: "https://www.jiosaavn.com/album/chilled-electronic/1"
+  },
+  {
+    id: "fallback_alb_2",
+    name: "Ultimate Pop Hits",
+    artist: "Pop Sensations",
+    image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=400&auto=format&fit=crop",
+    link: "https://www.jiosaavn.com/album/ultimate-pop-hits/2"
+  },
+  {
+    id: "fallback_alb_3",
+    name: "Cozy Lo-Fi Cafe",
+    artist: "Lofi Cafe Chill",
+    image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=400&auto=format&fit=crop",
+    link: "https://www.jiosaavn.com/album/cozy-lofi-cafe/3"
+  },
+  {
+    id: "fallback_alb_4",
+    name: "Epic Rock Anthems",
+    artist: "Rock Classics",
+    image: "https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?q=80&w=400&auto=format&fit=crop",
+    link: "https://www.jiosaavn.com/album/epic-rock-anthems/4"
+  }
+]
+
+export async function fetchTrendingAlbums() {
+  const cacheKey = "trendingAlbums"
+  const cached = getCachedData(cacheKey)
+  if (cached) return cached
+
+  interface TrendingAlbumResult {
+    id: string
+    name?: string
+    title?: string
+    subtitle?: string
+    description?: string
+    image?: { quality: string; link: string }[]
+    url?: string
+    link?: string
+    type: string
+  }
+
+  try {
+    const res = await fetch(`${BASE_URL}/get/trending?type=album&lang=hindi`, {
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
+      next: { revalidate: 3600 }
+    })
+    if (!res.ok) throw new Error("Status code not OK")
+    const json = await res.json()
+
+    const raw: TrendingAlbumResult[] = json.data || []
+    const rawAlbums = raw.filter((item) => item.type === "album")
+    const result = rawAlbums.map((alb) => ({
+      id: alb.id,
+      name: alb.name || alb.title,
+      artist: alb.subtitle || alb.description || "Trending Album",
+      image: alb.image?.[2]?.link || alb.image?.[alb.image.length - 1]?.link || "",
+      link: alb.url || alb.link || "",
+    }))
+    
+    if (result.length === 0) {
+      throw new Error("Empty trending albums results returned")
+    }
+
+    setCachedData(cacheKey, result)
+    return result
+  } catch (error) {
+    console.warn("Failed to fetch trending albums from API. Serving premium fallbacks:", error)
+    // Cache the fallbacks for 1 minute so we don't spam the failing endpoint
+    memoryCache.set(cacheKey, {
+      data: FALLBACK_TRENDING_ALBUMS,
+      expiry: Date.now() + 60 * 1000
+    })
+    return FALLBACK_TRENDING_ALBUMS
+  }
+}
+
+export async function fetchSongRecommendations(id: string): Promise<FormattedSong[]> {
+  const cacheKey = `recommend:${id}`
+  const cached = getCachedData(cacheKey)
+  if (cached) return cached
+
+  let songs: FormattedSong[] = []
+
+  // 1. Try direct recommend call with a tight timeout (2000ms)
+  try {
+    const res = await fetch(`${BASE_URL}/song/recommend?id=${id}`, {
+      signal: AbortSignal.timeout(2000),
+      next: { revalidate: 3600 }
+    })
+    if (res.ok) {
+      const json = await res.json()
+      const recs = json.data || []
+      if (Array.isArray(recs) && recs.length > 0) {
+        songs = recs.map(formatSong)
+      }
+    }
+  } catch (e) {
+    console.warn(`Failed to fetch song recommendations for id=${id} directly:`, e)
+  }
+
+  // 2. Fallback: Query matching songs by the artist of this song
+  if (songs.length === 0) {
+    try {
+      console.log(`Song Recommend Fallback: Fetching details for id=${id} to get artist`);
+      const detailsRes = await fetch(`${BASE_URL}/songs?id=${id}`, {
+        signal: AbortSignal.timeout(2000),
+        next: { revalidate: 3600 }
+      })
+      if (detailsRes.ok) {
+        const detailsJson = await detailsRes.json()
+        const rawSong = Array.isArray(detailsJson) ? detailsJson[0] : (detailsJson.data?.[0] || detailsJson)
+        
+        if (rawSong) {
+          const artist = rawSong.subtitle || rawSong.primaryArtists || ""
+          if (artist) {
+            console.log(`Song Recommend Fallback: Searching songs by artist ${artist}`);
+            // Reuse searchSongs helper which handles search with cache and timeout!
+            const searchRes = await searchSongs(artist, "songs")
+            if (searchRes && searchRes.songs && searchRes.songs.length > 0) {
+              songs = searchRes.songs.filter((s: any) => s.id !== id)
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Song recommend fallback failed:", e)
+    }
+  }
+
+  // 3. Secondary Fallback: Trending songs (cached and fast!)
+  if (songs.length === 0) {
+    try {
+      console.log("Song Recommend Secondary Fallback: Fetching trending songs");
+      songs = await fetchTrending()
+    } catch (e) {
+      console.error("Song recommend secondary fallback failed:", e)
+    }
+  }
+
+  // Deduplicate
+  const seenIds = new Set<string>()
+  const deduped = songs.filter((s) => {
+    if (seenIds.has(s.id)) return false
+    seenIds.add(s.id)
+    return true
+  })
+
+  setCachedData(cacheKey, deduped)
+  return deduped
+}
+
+// ── JIOSAAVN PLAYLIST BY ID ──
+export async function fetchJioSaavnPlaylistById(id: string) {
+  const cacheKey = `jiosaavn-playlist:${id}`
+  const cached = getCachedData(cacheKey)
+  if (cached) return cached
+
+  const res = await fetch(`${BASE_URL}/playlist?id=${id}`, {
+    signal: AbortSignal.timeout(API_TIMEOUT_MS),
+    next: { revalidate: 3600 },
+  })
+  if (!res.ok) throw new Error("Failed to fetch JioSaavn playlist")
+  const json = await res.json()
+  const data = json.data || {}
+
+  const rawSongs: RawSong[] = data.songs || []
+  const songs = rawSongs.map(formatSong)
+  const playlistImage = (data.image && data.image[2]?.link) || (data.image && data.image[data.image.length - 1]?.link) || ""
+
+  const result = {
+    id: data.id,
+    name: data.name || data.title,
+    image: playlistImage.replace("http://", "https://"),
+    description: data.subtitle || data.description || "",
+    songCount: songs.length,
+    songs,
+    isJioSaavn: true,
+  }
+  setCachedData(cacheKey, result)
+  return result
+}
+
+// ── MODULES (Homepage All-in-One) ──
+export async function fetchModules(lang = "hindi") {
+  const cacheKey = `modules:${lang}`
+  const cached = getCachedData(cacheKey)
+  if (cached) return cached
+
+  try {
+    const res = await fetch(`${BASE_URL}/modules?lang=${encodeURIComponent(lang)}`, {
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
+      next: { revalidate: 300 },
+    })
+    if (!res.ok) throw new Error(`Modules API returned ${res.status}`)
+    const json = await res.json()
+    const data = json.data || {}
+
+    const getArray = (val: any): any[] => {
+      if (!val) return []
+      if (Array.isArray(val)) return val
+      if (Array.isArray(val.data)) return val.data
+      return []
+    }
+
+    const getImg = (val: any): string => {
+      if (!val) return ""
+      if (typeof val === 'string') return val.replace("http://", "https://")
+      if (Array.isArray(val)) {
+        const link = val[2]?.link || val[val.length - 1]?.link || ""
+        return link.replace("http://", "https://")
+      }
+      return ""
+    }
+
+    const trendingItems = getArray(data.trending || data.trending_songs)
+    const trending_songs = trendingItems
+      .filter((s: any) => s.type === 'song' || s.download_url || s.downloadUrl)
+      .map(formatSong)
+
+    const featured_playlists = getArray(data.playlists || data.featured_playlists).map((p: any) => ({
+      id: p.id,
+      name: p.name || p.title || "",
+      image: getImg(p.image),
+      link: p.url || p.perma_url || "",
+      songCount: p.song_count || p.songCount || 0,
+    }))
+
+    const charts = getArray(data.charts).map((c: any) => ({
+      id: c.id,
+      name: c.name || c.title || "",
+      image: getImg(c.image),
+      link: c.url || c.perma_url || "",
+    }))
+
+    const albumsItems = getArray(data.albums || data.new_albums)
+    const new_trending = albumsItems
+      .filter((s: any) => s.type === 'song' || s.download_url || s.downloadUrl)
+      .map(formatSong)
+
+    const albums = albumsItems
+      .filter((item: any) => item.type === 'album' || !item.download_url)
+      .map((alb: any) => ({
+        id: alb.id,
+        name: alb.name || alb.title || "",
+        artist: alb.subtitle || alb.description || "Various Artists",
+        image: getImg(alb.image),
+        link: alb.url || alb.perma_url || alb.link || "",
+      }))
+
+    // Fallback: extract albums from trending if albums row is empty
+    if (albums.length === 0) {
+      trendingItems
+        .filter((item: any) => item.type === 'album' || !item.download_url)
+        .forEach((alb: any) => {
+          albums.push({
+            id: alb.id,
+            name: alb.name || alb.title || "",
+            artist: alb.subtitle || alb.description || "Various Artists",
+            image: getImg(alb.image),
+            link: alb.url || alb.perma_url || alb.link || "",
+          })
+        })
+    }
+
+    const seenArtists = new Set<string>()
+    const artist_recos: any[] = []
+
+    getArray(data.artist_recos || data.top_artists).forEach((art: any) => {
+      if (art.id && !seenArtists.has(art.id)) {
+        seenArtists.add(art.id)
+        artist_recos.push({
+          id: art.id,
+          name: art.name || art.title || "",
+          image: getImg(art.image),
+          link: art.url || art.perma_url || "",
+        })
+      }
+    })
+
+    // Fallback: populate popular artists from songs/albums metadata if artist_recos is empty
+    if (artist_recos.length === 0) {
+      const allItems = [...trendingItems, ...albumsItems]
+      for (const item of allItems) {
+        const artistList = item.artist_map?.artists || []
+        for (const art of artistList) {
+          if (art.id && !seenArtists.has(art.id)) {
+            seenArtists.add(art.id)
+            artist_recos.push({
+              id: art.id,
+              name: art.name || "",
+              image: getImg(art.image),
+              link: art.url || "",
+            })
+          }
+        }
+      }
+    }
+
+    const top_playlists = featured_playlists // use featured playlists as top playlists fallback
+    const result = { trending_songs, featured_playlists, charts, new_trending, top_playlists, albums, artist_recos }
+    setCachedData(cacheKey, result)
+    return result
+  } catch (error) {
+    console.warn("Failed to fetch modules, returning empty:", error)
+    return { trending_songs: [], featured_playlists: [], charts: [], new_trending: [], top_playlists: [], albums: [], artist_recos: [] }
+  }
+}
+
+// ── CHARTS by language ──
+export async function fetchCharts(lang = "hindi"): Promise<FormattedSong[]> {
+  const cacheKey = `charts:${lang}`
+  const cached = getCachedData(cacheKey)
+  if (cached) return cached
+
+  try {
+    const res = await fetch(`${BASE_URL}/get/trending?type=song&lang=${lang}`, {
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
+      next: { revalidate: 300 },
+    })
+    if (!res.ok) throw new Error(`Charts API returned ${res.status}`)
+    const json = await res.json()
+    const raw: (RawSong & { type?: string })[] = json.data || []
+    const songs = raw
+      .filter((s) => s.type === "song" || s.download_url)
+      .map(formatSong)
+    setCachedData(cacheKey, songs)
+    return songs
+  } catch (error) {
+    console.warn("fetchCharts failed:", error)
+    return []
+  }
+}

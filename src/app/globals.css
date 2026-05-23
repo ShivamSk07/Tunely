@@ -1,27 +1,446 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0a0a0f;
+    --surface: #111118;
+    --surface-2: #16161f;
+    --surface-3: #1c1c28;
+    --foreground: #F3F4F6;
+    --muted: #9CA3AF;
+    
+    --primary: #6C63FF;
+    --primary-light: #8B85FF;
+    --primary-dark: #4A42E0;
+    --secondary: #FF6584;
+    --secondary-light: #FF8FA5;
+    
+    --border: rgba(255, 255, 255, 0.06);
+    --border-active: rgba(108, 99, 255, 0.35);
+    
+    --scroll-track: #0a0a0f;
+    --scroll-thumb: #222230;
+    --scroll-thumb-hover: #6C63FF;
+
+    --sidebar-width: 240px;
+    --player-height: 90px;
+
+    /* Mobile layout variables */
+    --mobile-bottom-nav-height: 76px;
+    --mobile-mini-player-height: 64px;
+    /* Total bottom clearance on mobile = mini player (64) + nav (56) + credit strip (20) */
+    --mobile-bottom-clearance: 140px;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover); }
+
+/* Hide scrollbar for snap containers */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+
+/* ==================== EQUALIZER ANIMATIONS ==================== */
+@keyframes eq-bounce-1 {
+  0%, 100% { height: 4px; }
+  50% { height: 20px; }
+}
+@keyframes eq-bounce-2 {
+  0%, 100% { height: 8px; }
+  50% { height: 26px; }
+}
+@keyframes eq-bounce-3 {
+  0%, 100% { height: 3px; }
+  50% { height: 16px; }
+}
+@keyframes eq-bounce-4 {
+  0%, 100% { height: 10px; }
+  50% { height: 22px; }
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+.eq-container {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 28px;
+}
+
+.eq-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--primary);
+}
+
+.eq-bar-1 {
+  width: 3px;
+  background: var(--secondary);
+  animation: eq-bounce-1 0.8s ease-in-out infinite alternate;
+}
+.eq-bar-2 {
+  width: 3px;
+  background: var(--primary);
+  animation: eq-bounce-2 0.6s ease-in-out infinite alternate;
+  animation-delay: 0.1s;
+}
+.eq-bar-3 {
+  width: 3px;
+  background: var(--secondary);
+  animation: eq-bounce-3 0.7s ease-in-out infinite alternate;
+  animation-delay: 0.3s;
+}
+.eq-bar-4 {
+  width: 3px;
+  background: var(--primary-light);
+  animation: eq-bounce-4 0.9s ease-in-out infinite alternate;
+  animation-delay: 0.15s;
+}
+
+/* ==================== GLOW EFFECTS ==================== */
+.glow-primary { box-shadow: 0 0 24px rgba(108, 99, 255, 0.25); }
+.glow-secondary { box-shadow: 0 0 24px rgba(255, 101, 132, 0.25); }
+.glow-hover:hover { box-shadow: 0 0 30px rgba(108, 99, 255, 0.3); }
+
+/* Legacy compat */
+.purple-glow { box-shadow: 0 0 20px rgba(108, 99, 255, 0.15); }
+.purple-glow-hover:hover {
+  box-shadow: 0 0 20px rgba(108, 99, 255, 0.35);
+  border-color: rgba(108, 99, 255, 0.4);
+}
+
+/* ==================== GLASS EFFECTS ==================== */
+.glass {
+  background: rgba(18, 18, 30, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+}
+.glass-dark {
+  background: rgba(8, 8, 16, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border);
+}
+.glass-effect {
+  background: rgba(18, 18, 30, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(108, 99, 255, 0.08);
+}
+.glass-top-bar {
+  background: rgba(8, 8, 16, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(108, 99, 255, 0.08);
+}
+
+/* ==================== CARD HOVER ==================== */
+.card-hover {
+  transition: all 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  background: var(--surface-3) !important;
+}
+
+/* ==================== ACTIVE LINK ==================== */
+.nav-link-active {
+  background: rgba(108, 99, 255, 0.15);
+  color: white;
+  border-left: 3px solid var(--primary);
+}
+
+/* ==================== PROGRESS BAR RANGE ==================== */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: white;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(0,0,0,0.5);
+}
+input[type="range"].slim::-webkit-slider-thumb {
+  width: 0;
+  height: 0;
+  transition: all 0.15s;
+}
+input[type="range"].slim:hover::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+}
+
+/* Mobile: always show thumb on range inputs */
+@media (max-width: 768px) {
+  input[type="range"]::-webkit-slider-thumb {
+    width: 16px;
+    height: 16px;
+  }
+  input[type="range"].slim::-webkit-slider-thumb {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* ==================== TEXT GRADIENTS ==================== */
+.text-gradient-primary {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ==================== SONG ROW HOVER ==================== */
+.song-row {
+  transition: background 0.15s ease;
+}
+.song-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.song-row:hover .song-row-number { display: none; }
+.song-row:hover .song-row-play { display: flex !important; }
+
+/* ==================== IMAGE SHIMMER LOADING ==================== */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, #1c1c28 25%, #242436 50%, #1c1c28 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ==================== ACTIVE INDICATOR ==================== */
+.active-glow {
+  box-shadow: 0 0 15px rgba(255, 101, 132, 0.2);
+  border-color: rgba(255, 101, 132, 0.4);
+}
+
+/* ==================== SECTION TITLE ==================== */
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: white;
+  letter-spacing: -0.02em;
+}
+
+/* ==================== PLAYLIST CARD ==================== */
+.playlist-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.playlist-card:hover {
+  transform: translateY(-4px);
+}
+.playlist-card .play-overlay {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 44px;
+  height: 44px;
+  background: var(--primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.25s ease;
+  box-shadow: 0 8px 20px rgba(108,99,255,0.5);
+}
+.playlist-card:hover .play-overlay {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ==================== MOBILE SAFE AREA HELPERS ==================== */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* ==================== MOBILE: TOUCH TARGETS ==================== */
+@media (max-width: 768px) {
+  /* Ensure minimum touch targets */
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Improve text truncation on mobile */
+  .mobile-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Smooth iOS scroll */
+  .mobile-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  /* Hide scrollbars on mobile swipe lists */
+  .mobile-swipe-list::-webkit-scrollbar {
+    display: none;
+  }
+  .mobile-swipe-list {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Smaller section titles on mobile */
+  .section-title {
+    font-size: 1.1rem;
+  }
+}
+
+/* ==================== SLIDE IN ANIMATIONS ==================== */
+@keyframes slideInFromBottom {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes slideInFromRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* animate-in utility classes (used by mobile sheets) */
+.animate-in { animation-fill-mode: both; }
+.slide-in-from-bottom { animation-name: slideInFromBottom; }
+.slide-in-from-right { animation-name: slideInFromRight; }
+.fade-in { animation-name: fadeIn; }
+.duration-200 { animation-duration: 200ms; }
+.duration-300 { animation-duration: 300ms; }
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ==================== MOBILE BOTTOM NAV SAFE PADDING ==================== */
+/* The mobile-bottom-nav class adds safe-area-inset-bottom support */
+.mobile-bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  height: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+}
+
+/* ==================== NETFLIX STYLE INTRO LOADER ==================== */
+.netflix-logo-container {
+  animation: netflixSlam 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards, netflixPulse 2.5s ease-in-out infinite 1.2s;
+  transform-origin: center;
+  filter: drop-shadow(0 0 15px rgba(255, 101, 132, 0.4));
+}
+
+@keyframes netflixSlam {
+  0% {
+    transform: scale(6);
+    filter: blur(12px) drop-shadow(0 0 40px rgba(108, 99, 255, 0.8));
+    opacity: 0;
+  }
+  60% {
+    transform: scale(0.95);
+    filter: blur(0px) drop-shadow(0 0 20px rgba(255, 101, 132, 0.6));
+    opacity: 1;
+  }
+  80% {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 25px rgba(255, 138, 0, 0.7));
+  }
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 15px rgba(255, 101, 132, 0.5));
+    opacity: 1;
+  }
+}
+
+@keyframes netflixPulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 15px rgba(255, 101, 132, 0.5));
+  }
+  50% {
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 30px rgba(108, 99, 255, 0.8));
+  }
+}
+
+.netflix-letter {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(20px) scale(0.6);
+  filter: blur(4px);
+  animation: letterPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes letterPop {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.6);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.loader-dots {
+  opacity: 0;
+  animation: fadeIn 0.5s ease-out forwards 1.8s;
+}
+
+.loader-dot {
+  animation: dotPulse 1.2s infinite ease-in-out;
+  background: linear-gradient(to right, #6C63FF, #FF6584);
+  box-shadow: 0 0 8px rgba(255, 101, 132, 0.6);
+}
+
+@keyframes dotPulse {
+  0%, 100% {
+    transform: scale(0.8);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 1;
+    filter: brightness(1.2);
   }
 }

@@ -1,0 +1,45 @@
+"use client"
+
+import React from "react"
+
+interface LogoProps {
+  size?: number
+  className?: string
+}
+
+export default function Logo({ size = 24, className = "" }: LogoProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+    >
+      <defs>
+        <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#6C63FF" />
+          <stop offset="50%" stopColor="#FF6584" />
+          <stop offset="100%" stopColor="#FF8A00" />
+        </linearGradient>
+      </defs>
+      
+      {/* Dynamic soundwave/equalizer bars on the left */}
+      <rect x="4" y="13" width="2" height="6" rx="1" fill="url(#logoGrad)" opacity="0.4" />
+      <rect x="8" y="9" width="2" height="14" rx="1" fill="url(#logoGrad)" opacity="0.7" />
+      
+      {/* Dynamic soundwave/equalizer bars on the right */}
+      <rect x="22" y="7" width="2" height="18" rx="1" fill="url(#logoGrad)" opacity="0.7" />
+      <rect x="26" y="11" width="2" height="10" rx="1" fill="url(#logoGrad)" opacity="0.4" />
+
+      {/* Main Stylized Music Note / "T" Shape */}
+      <path
+        d="M13 6C13 5.44772 13.4477 5 14 5H19C19.5523 5 20 5.44772 20 6V7.5C20 8.05228 19.5523 8.5 19 8.5H16.5V20.5C16.5 22.433 14.933 24 13 24C11.067 24 9.5 22.433 9.5 20.5C9.5 18.567 11.067 17 13 17C13.8284 17 14.5884 17.2884 15.1816 17.7719C15.38 17.9337 15.5 18.1793 15.5 18.4385V8.5H14C13.4477 8.5 13 8.05228 13 7.5V6Z"
+        fill="url(#logoGrad)"
+        stroke="white"
+        strokeWidth="0.5"
+      />
+    </svg>
+  )
+}
