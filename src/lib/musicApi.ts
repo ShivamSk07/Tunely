@@ -138,7 +138,7 @@ export const FALLBACK_TRENDING_SONGS: FormattedSong[] = [
     id: "fallback_6",
     name: "Rainy Day Lo-Fi",
     artist: "Lofi Beats Chill",
-    image: "https://images.unsplash.com/photo-1515462277126-270d878326e5?q=80&w=400&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=400&auto=format&fit=crop",
     streamUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
     duration: 240,
     playCount: "25,321,990",

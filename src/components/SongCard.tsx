@@ -14,6 +14,7 @@ interface SongCardProps {
 }
 
 export default function SongCard({ song, onSongSelected }: SongCardProps) {
+  const [imgFailed, setImgFailed] = React.useState(false)
   const { data: session } = useSession()
   const queryClient = useQueryClient()
   const currentSong = usePlayerStore((state) => state.currentSong)
@@ -121,6 +122,8 @@ export default function SongCard({ song, onSongSelected }: SongCardProps) {
     }
   }
 
+  if (imgFailed) return null
+
   return (
     <div 
       onClick={handlePlayClick}
@@ -135,6 +138,7 @@ export default function SongCard({ song, onSongSelected }: SongCardProps) {
             src={song.image} 
             alt={song.name} 
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+            onError={() => setImgFailed(true)}
           />
         ) : (
           <Disc size={40} className="text-[#6C63FF] animate-pulse" />

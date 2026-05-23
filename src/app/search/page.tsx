@@ -14,7 +14,7 @@ const GENRE_CATEGORIES = [
   // Pop — mic on stage, pop concert lights
   { label: "Pop", color: "from-[#1DB954] to-[#158f3e]", query: "Pop Hits", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=400&auto=format&fit=crop" },
   // Hip-Hop — microphone + rap/hip-hop stage
-  { label: "Hip-Hop", color: "from-[#FF6B35] to-[#cc4d1a]", query: "Hip Hop", image: "https://images.unsplash.com/photo-1571609072496-9d3fe4a8f4e3?q=80&w=400&auto=format&fit=crop" },
+  { label: "Hip-Hop", color: "from-[#FF6B35] to-[#cc4d1a]", query: "Hip Hop", image: "https://images.unsplash.com/photo-1524678606370-a47ad25cb82a?q=80&w=400&auto=format&fit=crop" },
   // Bollywood — colorful Indian cinema / dance
   { label: "Bollywood", color: "from-[#E91E63] to-[#ad1457]", query: "Bollywood Hits", image: "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?q=80&w=400&auto=format&fit=crop" },
   // Romantic — couple silhouette at sunset

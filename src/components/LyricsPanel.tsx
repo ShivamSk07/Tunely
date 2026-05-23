@@ -182,7 +182,7 @@ function LyricsContent({ currentSong, isPlaying, toggleLyrics }: LyricsContentPr
   return (
     <>
       {/* ── PREMIUM HEADER (Center title, floating control widgets) ── */}
-      <div className="flex items-center justify-between px-8 py-6 bg-gradient-to-b from-black/20 to-transparent backdrop-blur-sm border-b border-white/5 flex-shrink-0 relative z-10">
+      <div className="flex items-center justify-between px-4 md:px-8 py-4 md:py-6 bg-gradient-to-b from-black/20 to-transparent backdrop-blur-sm border-b border-white/5 flex-shrink-0 relative z-10">
         {/* Left Side: Track details */}
         {currentSong && (
           <div className="flex items-center gap-4">
@@ -246,7 +246,7 @@ function LyricsContent({ currentSong, isPlaying, toggleLyrics }: LyricsContentPr
       {/* ── LYRICS FEED (Center Stage, highly premium scrolling display) ── */}
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto px-6 sm:px-12 md:px-24 py-28 no-scrollbar scroll-smooth relative z-10 flex flex-col items-center"
+        className="flex-1 overflow-y-auto px-6 sm:px-12 md:px-24 py-16 md:py-28 no-scrollbar scroll-smooth relative z-10 flex flex-col items-center"
       >
         <div className="w-full max-w-3xl">
           {loading ? (
@@ -291,7 +291,7 @@ function LyricsContent({ currentSong, isPlaying, toggleLyrics }: LyricsContentPr
             </div>
           ) : syncedLines.length > 0 && mode === "live" ? (
             /* ── Synced Immersive Apple Music Layout ── */
-            <div className="space-y-8 py-40 select-none">
+            <div className="space-y-8 py-20 md:py-40 select-none">
               {syncedLines.map((line, index) => {
                 const isActive = index === activeLineIndex
                 
@@ -461,6 +461,7 @@ export default function LyricsPanel() {
         style={{
           background: "rgba(6, 6, 10, 0.92)",
           backdropFilter: "blur(60px)",
+          paddingTop: "env(safe-area-inset-top, 24px)",
           paddingBottom: "env(safe-area-inset-bottom, 0px)",
         }}
       >

@@ -16,6 +16,7 @@ interface SongPillProps {
 }
 
 export default function SongPill({ song, playlistId, onSongSelected }: SongPillProps) {
+  const [imgFailed, setImgFailed] = React.useState(false)
   const { data: session } = useSession()
   const queryClient = useQueryClient()
   const currentSong = usePlayerStore((state) => state.currentSong)
@@ -154,6 +155,8 @@ export default function SongPill({ song, playlistId, onSongSelected }: SongPillP
     return `${m}:${s < 10 ? "0" : ""}${s}`
   }
 
+  if (imgFailed) return null
+
   return (
     <div 
       onClick={handlePlayClick}
@@ -165,7 +168,7 @@ export default function SongPill({ song, playlistId, onSongSelected }: SongPillP
         {/* Index or Cover Image */}
         <div className="relative w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden bg-[#080810] flex items-center justify-center border border-gray-800">
           {song.image ? (
-            <img src={song.image} alt={song.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+            <img src={song.image} alt={song.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={() => setImgFailed(true)} />
           ) : (
             <Disc size={20} className="text-[#6C63FF]" />
           )}
