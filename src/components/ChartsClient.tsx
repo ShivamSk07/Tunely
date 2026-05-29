@@ -26,7 +26,7 @@ export default function ChartsClient({ initialSongs, initialLang }: Props) {
   const play = usePlayerStore((s) => s.play)
   const pause = usePlayerStore((s) => s.pause)
 
-  const { data: songs = initialSongs, isLoading } = useQuery<Song[]>({
+  const { data: songs, isLoading } = useQuery<Song[]>({
     queryKey: ["charts", activeLang],
     queryFn: async () => {
       const res = await fetch(`/api/charts?lang=${activeLang}`)
@@ -34,16 +34,17 @@ export default function ChartsClient({ initialSongs, initialLang }: Props) {
       const json = await res.json()
       return json.data || []
     },
-    initialData: activeLang === initialLang ? initialSongs : undefined,
-    initialDataUpdatedAt: activeLang === initialLang ? Date.now() : undefined,
+    initialData: (activeLang === initialLang && initialSongs && initialSongs.length > 0) ? initialSongs : undefined,
     staleTime: 1000 * 60 * 5,
   })
+
+  const songsList = songs || []
 
   const handlePlay = (song: Song, index: number) => {
     if (currentSong?.id === song.id) {
       isPlaying ? pause() : play()
     } else {
-      setQueue(songs, index)
+      setQueue(songsList, index)
     }
   }
 
@@ -99,7 +100,7 @@ export default function ChartsClient({ initialSongs, initialLang }: Props) {
               <div key={i} className="flex items-center gap-4 p-3 rounded-xl bg-[#1a1a24] animate-pulse h-[72px]" />
             ))}
           </div>
-        ) : songs.length === 0 ? (
+        ) : songsList.length === 0 ? (
           <div className="text-center py-20">
             <TrendingUp size={48} className="text-[#727272] mx-auto mb-3" />
             <p className="text-white font-bold">No charts available</p>
@@ -107,7 +108,7 @@ export default function ChartsClient({ initialSongs, initialLang }: Props) {
           </div>
         ) : (
           <div className="space-y-1">
-            {songs.map((song, i) => {
+            {songsList.map((song, i) => {
               const isCurrent = currentSong?.id === song.id
               return (
                 <div

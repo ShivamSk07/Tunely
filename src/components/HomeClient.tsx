@@ -85,7 +85,7 @@ interface Props {
 
 // Quick-access mood mixes
 const MOOD_MIXES = [
-  { label: "Dil Toota Sad",     query: "dil toota sad hindi songs",      key: "Chill",      gradient: "from-[#4f46e5] to-[#1e1b4b]" },
+  { label: "Sad",               query: "sad hindi songs",                key: "Chill",      gradient: "from-[#4f46e5] to-[#1e1b4b]" },
   { label: "Party Hits",        query: "party hindi dance songs",        key: "Party",      gradient: "from-[#ec4899] to-[#9f1239]" },
   { label: "Baarish Romantic",  query: "baarish hindi romantic songs",    key: "Sufi",       gradient: "from-[#059669] to-[#064e3b]" },
   { label: "Gym Workout",       query: "gym workout hindi rap",          key: "Workout",    gradient: "from-[#ea580c] to-[#7c2d12]" },

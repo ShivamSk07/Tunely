@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { jsonCached } from "@/lib/apiResponse"
+import { getImg } from "@/lib/musicApi"
 
 export const dynamic = "force-dynamic"
 
@@ -24,12 +25,15 @@ export async function GET(req: NextRequest) {
     const data = (json.data || []).map((p: any) => ({
       id: p.id,
       name: p.name || p.title || "",
-      image: (p.image && (p.image[2]?.link || p.image[p.image.length - 1]?.link) || "").replace("http://", "https://"),
+      image: getImg(p.image),
       link: p.url || p.perma_url || "",
       songCount: p.song_count || p.songCount || 0,
     }))
 
-    return jsonCached({ status: "Success", data }, 600, 1200)
+    return NextResponse.json(
+      { status: "Success", data },
+      { headers: { "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate" } }
+    )
   } catch (error: any) {
     console.error("Playlist recommend API error:", error)
     return NextResponse.json({ status: "Success", data: [] }, { status: 200 })

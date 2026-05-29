@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const lang = searchParams.get("lang") || "hindi"
 
-    const res = await fetch(`${BASE_URL}/modules?lang=${encodeURIComponent(lang)}`, {
+    const res = await fetch(`${BASE_URL}/modules?language=${encodeURIComponent(lang)}`, {
       next: { revalidate: 300 },
       signal: AbortSignal.timeout(10000),
     })

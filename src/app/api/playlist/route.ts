@@ -13,14 +13,18 @@ export async function GET(req: NextRequest) {
     if (id) {
       // JioSaavn playlist by ID (featured playlists from /modules)
       const data = await fetchJioSaavnPlaylistById(id)
-      return jsonCached(data, 300, 600)
+      return NextResponse.json(data, {
+        headers: { "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate" }
+      })
     }
 
     if (!link) {
       return NextResponse.json({ error: "Missing link or id parameter" }, { status: 400 })
     }
     const data = await fetchPlaylistDetails(link)
-    return jsonCached(data, 300, 600)
+    return NextResponse.json(data, {
+      headers: { "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate" }
+    })
   } catch (error: any) {
     console.error("Error in playlist API proxy:", error)
     return NextResponse.json({ error: error.message || "Failed to fetch playlist details" }, { status: 500 })
