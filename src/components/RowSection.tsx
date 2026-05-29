@@ -11,9 +11,14 @@ interface RowSectionProps {
   isLoading: boolean
   onSongSelected?: (song: Song) => void
   showAll?: boolean
+  /** Mobile-only card width variant — desktop layout unchanged */
+  mobileCardSize?: "sm" | "md" | "lg"
 }
 
-export default function RowSection({ title, songs, isLoading, onSongSelected }: RowSectionProps) {
+const MOBILE_CARD_SIZES = { sm: 128, md: 148, lg: 168 } as const
+
+export default function RowSection({ title, songs, isLoading, onSongSelected, mobileCardSize = "md" }: RowSectionProps) {
+  const cardSize = MOBILE_CARD_SIZES[mobileCardSize]
   const currentSong = usePlayerStore((state) => state.currentSong)
   const isPlaying = usePlayerStore((state) => state.isPlaying)
   const [isExpanded, setIsExpanded] = React.useState(false)
@@ -39,18 +44,13 @@ export default function RowSection({ title, songs, isLoading, onSongSelected }: 
       {/* ── MOBILE: Horizontal swipeable scroll ── */}
       <div className="md:hidden">
         <div
-          className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory"
-          style={{
-            scrollbarWidth: "none",
-            msOverflowStyle: "none",
-            WebkitOverflowScrolling: "touch",
-            paddingLeft: "16px",
-          } as React.CSSProperties}
+          className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory px-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          style={{ WebkitOverflowScrolling: "touch" } as React.CSSProperties}
         >
           {isLoading
             ? Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="flex-shrink-0 snap-start space-y-2" style={{ width: "148px" }}>
-                  <div className="rounded-xl shimmer" style={{ width: "148px", height: "148px" }} />
+                <div key={i} className="flex-shrink-0 snap-start space-y-2" style={{ width: cardSize }}>
+                  <div className="rounded-xl shimmer" style={{ width: cardSize, height: cardSize }} />
                   <div className="h-3 shimmer rounded w-3/4" />
                   <div className="h-2.5 shimmer rounded w-1/2" />
                 </div>
@@ -61,19 +61,19 @@ export default function RowSection({ title, songs, isLoading, onSongSelected }: 
                   <div
                     key={song.id}
                     className="flex-shrink-0 snap-start cursor-pointer"
-                    style={{ width: "148px" }}
+                    style={{ width: cardSize }}
                     onClick={() => onSongSelected?.(song)}
                   >
                     <div
                       className="relative rounded-xl overflow-hidden bg-[#282828] shadow-lg"
-                      style={{ width: "148px", height: "148px" }}
+                      style={{ width: cardSize, height: cardSize }}
                     >
                       {song.image ? (
                         <Image
                           src={song.image}
                           alt={song.name}
-                          width={148}
-                          height={148}
+                          width={cardSize}
+                          height={cardSize}
                           className="w-full h-full object-cover"
                           loading="lazy"
                         />
@@ -110,8 +110,6 @@ export default function RowSection({ title, songs, isLoading, onSongSelected }: 
                   </div>
                 )
               })}
-          {/* Trailing spacer so last card has right-side clearance */}
-          <div className="flex-shrink-0" style={{ width: "4px" }} />
         </div>
       </div>
 

@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Play, Pause, ArrowRight, Heart, BarChart2, ListMusic, User } from "lucide-react"
+import { Play, Pause, ArrowRight, Heart, BarChart2, ListMusic, User, Search, Compass } from "lucide-react"
 import RowSection from "@/components/RowSection"
 import RowAlbums from "@/components/RowAlbums"
 import { usePlayerStore, Song } from "@/store/usePlayerStore"
@@ -234,6 +234,7 @@ function DiscoverSongsRow({
         songs={songs}
         isLoading={isLoading}
         onSongSelected={(song) => onSongSelected(songs, song)}
+        mobileCardSize="sm"
       />
     </div>
   )
@@ -259,6 +260,7 @@ function NewReleasesRow({ sessionSeed, onSongSelected }: RowProps) {
         songs={songs}
         isLoading={isLoading}
         onSongSelected={(song) => onSongSelected(songs, song)}
+        mobileCardSize="lg"
       />
     </div>
   )
@@ -284,6 +286,7 @@ function LatestHindiRow({ sessionSeed, onSongSelected }: RowProps) {
         songs={songs}
         isLoading={isLoading}
         onSongSelected={(song) => onSongSelected(songs, song)}
+        mobileCardSize="lg"
       />
     </div>
   )
@@ -309,6 +312,7 @@ function HindiRomanticRow({ sessionSeed, onSongSelected }: RowProps) {
         songs={songs}
         isLoading={isLoading}
         onSongSelected={(song) => onSongSelected(songs, song)}
+        mobileCardSize="sm"
       />
     </div>
   )
@@ -350,6 +354,7 @@ function PopularMixesRow() {
         title="Popular Mixes"
         albums={formattedMixes}
         isLoading={isLoading}
+        mobileCardSize="lg"
       />
     </div>
   )
@@ -375,6 +380,7 @@ function ArijitSinghRow({ sessionSeed, onSongSelected }: RowProps) {
         songs={songs}
         isLoading={isLoading}
         onSongSelected={(song) => onSongSelected(songs, song)}
+        mobileCardSize="md"
       />
     </div>
   )
@@ -400,6 +406,7 @@ function LofiHindiRow({ sessionSeed, onSongSelected }: RowProps) {
         songs={songs}
         isLoading={isLoading}
         onSongSelected={(song) => onSongSelected(songs, song)}
+        mobileCardSize="sm"
       />
     </div>
   )
@@ -425,6 +432,7 @@ function RetroHindiRow({ sessionSeed, onSongSelected }: RowProps) {
         songs={songs}
         isLoading={isLoading}
         onSongSelected={(song) => onSongSelected(songs, song)}
+        mobileCardSize="lg"
       />
     </div>
   )
@@ -618,17 +626,89 @@ export default function HomeClient({ initialTrending, initialAlbums, initialModu
   }, [trendingSongsRaw, sessionSeed])
 
   const quickPicks = trendingSongs.slice(0, 6)
+  const featuredSong = trendingSongs[0]
 
   return (
     <div className="min-h-full pb-36 md:pb-12">
       {/* ── GREETING HEADER ── */}
-      <div className="px-4 md:px-6 pt-6 md:pt-8 pb-4 md:pb-6">
+      <div className="px-4 md:px-6 pt-6 md:pt-8 pb-2 md:pb-6">
         <h1 className="text-xl md:text-3xl font-black text-white">{greeting}</h1>
+        <p className="md:hidden text-sm text-[#B3B3B3] mt-1">What do you want to listen to?</p>
       </div>
 
-      {/* ── QUICK PICKS: 2-col grid of recent/trending ── */}
+      {/* ── MOBILE HERO: featured pick (replaces quick-pick cards on small screens) ── */}
+      <div className="md:hidden px-4 mb-6">
+        {isTrendingLoading ? (
+          <div className="aspect-[5/3] rounded-2xl shimmer" />
+        ) : featuredSong ? (
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => {
+              if (currentSong?.id === featuredSong.id) {
+                if (isPlaying) pause()
+                else play()
+              } else {
+                handleSongPlay(trendingSongs, featuredSong)
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault()
+                if (currentSong?.id === featuredSong.id) {
+                  if (isPlaying) pause()
+                  else play()
+                } else {
+                  handleSongPlay(trendingSongs, featuredSong)
+                }
+              }
+            }}
+            className="relative aspect-[5/3] rounded-2xl overflow-hidden cursor-pointer active:scale-[0.99] transition-transform"
+          >
+            <Image
+              src={featuredSong.image || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&h=480&auto=format&fit=crop"}
+              alt={featuredSong.name}
+              fill
+              sizes="100vw"
+              className="object-cover"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-4">
+              <span className="text-[10px] font-black uppercase tracking-widest text-[#6C63FF]">Pick for you</span>
+              <h2 className="text-lg font-black text-white mt-1 line-clamp-1">{featuredSong.name}</h2>
+              <p className="text-xs text-[#B3B3B3] truncate mt-0.5">{featuredSong.artist}</p>
+              <div className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#6C63FF] text-white text-xs font-bold shadow-lg">
+                {currentSong?.id === featuredSong.id && isPlaying ? (
+                  <><Pause size={14} className="fill-white" /> Pause</>
+                ) : (
+                  <><Play size={14} className="fill-white ml-0.5" /> Play now</>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : null}
+        <div className="flex gap-2 mt-3">
+          <Link
+            href="/search"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1a1a24] text-white text-xs font-bold hover:bg-[#282828] transition-colors"
+          >
+            <Search size={14} className="text-[#6C63FF]" />
+            Search
+          </Link>
+          <Link
+            href="/playlists"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1a1a24] text-white text-xs font-bold hover:bg-[#282828] transition-colors"
+          >
+            <Compass size={14} className="text-[#FF6584]" />
+            Playlists
+          </Link>
+        </div>
+      </div>
+
+      {/* ── QUICK PICKS: desktop only (2-col grid) ── */}
       {(isTrendingLoading || quickPicks.length > 0) && (
-        <div className="px-4 md:px-6 mb-8">
+        <div className="hidden md:block px-4 md:px-6 mb-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
             {isTrendingLoading
               ? Array.from({ length: 6 }).map((_, i) => (
@@ -689,6 +769,7 @@ export default function HomeClient({ initialTrending, initialAlbums, initialModu
           songs={trendingSongs}
           isLoading={isTrendingLoading}
           onSongSelected={(song) => handleSongPlay(trendingSongs, song)}
+          mobileCardSize="md"
         />
       </div>
 
@@ -697,10 +778,7 @@ export default function HomeClient({ initialTrending, initialAlbums, initialModu
         <div className="px-4 md:px-6 mb-3 flex items-center justify-between">
           <h2 className="text-lg md:text-xl font-black text-white">Mood & Vibes</h2>
         </div>
-        <div
-          className="flex gap-2.5 overflow-x-auto pb-1"
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none", paddingLeft: "16px", paddingRight: "4px" } as React.CSSProperties}
-        >
+        <div className="flex gap-2.5 overflow-x-auto pb-1 px-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {MOOD_MIXES.map((mix) => (
             <button
               key={mix.key}
@@ -713,7 +791,6 @@ export default function HomeClient({ initialTrending, initialAlbums, initialModu
               {mix.label}
             </button>
           ))}
-          <div className="flex-shrink-0 w-1" />
         </div>
       </div>
 
@@ -764,6 +841,7 @@ export default function HomeClient({ initialTrending, initialAlbums, initialModu
               albums={modules?.featured_playlists?.map(p => ({ id: p.id, name: p.name, artist: `${p.songCount || ''} songs`, image: p.image, link: `/jiosaavn-playlist?id=${p.id}` })) || []}
               isLoading={isModulesLoading}
               linkPrefix=""
+              mobileCardSize="sm"
             />
           </div>
         </LazyRow>
@@ -818,6 +896,7 @@ export default function HomeClient({ initialTrending, initialAlbums, initialModu
               songs={modules?.new_trending || []}
               isLoading={isModulesLoading}
               onSongSelected={(song) => handleSongPlay(modules?.new_trending || [], song)}
+              mobileCardSize="sm"
             />
           </div>
         </LazyRow>
@@ -829,7 +908,7 @@ export default function HomeClient({ initialTrending, initialAlbums, initialModu
         const isLoading = isModulesLoading ? true : (!modules?.albums?.length && isAlbumsLoading)
         return (albumsData.length > 0 || isLoading) ? (
           <div className="mb-8">
-            <RowAlbums title="Popular Albums" albums={albumsData.map(a => ({ id: a.id, name: a.name, artist: a.artist || "Various Artists", image: a.image, link: a.link }))} isLoading={isLoading} />
+            <RowAlbums title="Popular Albums" albums={albumsData.map(a => ({ id: a.id, name: a.name, artist: a.artist || "Various Artists", image: a.image, link: a.link }))} isLoading={isLoading} mobileCardSize="md" />
           </div>
         ) : null
       })()}
@@ -845,10 +924,7 @@ export default function HomeClient({ initialTrending, initialAlbums, initialModu
               </h2>
             </div>
             {isModulesLoading ? (
-              <div
-                className="flex gap-4 overflow-x-hidden"
-                style={{ paddingLeft: "16px" }}
-              >
+              <div className="flex gap-4 overflow-x-hidden px-4">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <div key={i} className="flex-shrink-0 w-[88px] text-center space-y-2">
                     <div className="w-[72px] h-[72px] rounded-full bg-[#1a1a24] animate-pulse mx-auto" />
@@ -857,15 +933,7 @@ export default function HomeClient({ initialTrending, initialAlbums, initialModu
                 ))}
               </div>
             ) : (
-              <div
-                className="flex gap-4 overflow-x-auto pb-2 snap-x"
-                style={{
-                  scrollbarWidth: "none",
-                  msOverflowStyle: "none",
-                  paddingLeft: "16px",
-                  paddingRight: "4px",
-                } as React.CSSProperties}
-              >
+              <div className="flex gap-4 overflow-x-auto pb-2 snap-x px-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                 {modules?.artist_recos?.map((artist) => (
                   <Link
                     key={artist.id}
@@ -882,8 +950,6 @@ export default function HomeClient({ initialTrending, initialAlbums, initialModu
                     <p className="text-[11px] font-semibold text-white truncate group-hover:text-[#6C63FF] transition-colors px-1">{artist.name}</p>
                   </Link>
                 ))}
-                {/* Trailing spacer */}
-                <div className="flex-shrink-0" style={{ width: "4px" }} />
               </div>
             )}
           </div>

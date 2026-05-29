@@ -19,7 +19,11 @@ interface RowAlbumsProps {
   albums: AlbumItem[]
   isLoading: boolean
   linkPrefix?: string // if provided, overrides default /album?link= behavior
+  /** Mobile-only card width variant — desktop layout unchanged */
+  mobileCardSize?: "sm" | "md" | "lg"
 }
+
+const MOBILE_CARD_SIZES = { sm: 128, md: 148, lg: 168 } as const
 
 function getAlbumHref(link: string): string {
   // If it's already an internal path (starts with /), use it directly
@@ -27,7 +31,8 @@ function getAlbumHref(link: string): string {
   return `/album?link=${encodeURIComponent(link)}`
 }
 
-export default function RowAlbums({ title, albums, isLoading }: RowAlbumsProps) {
+export default function RowAlbums({ title, albums, isLoading, mobileCardSize = "md" }: RowAlbumsProps) {
+  const cardSize = MOBILE_CARD_SIZES[mobileCardSize]
   const queryClient = useQueryClient()
   const [isExpanded, setIsExpanded] = React.useState(false)
 
@@ -64,18 +69,13 @@ export default function RowAlbums({ title, albums, isLoading }: RowAlbumsProps) 
       {/* ── MOBILE: Horizontal swipeable scroll ── */}
       <div className="md:hidden">
         <div
-          className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory"
-          style={{
-            scrollbarWidth: "none",
-            msOverflowStyle: "none",
-            WebkitOverflowScrolling: "touch",
-            paddingLeft: "16px",
-          } as React.CSSProperties}
+          className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory px-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          style={{ WebkitOverflowScrolling: "touch" } as React.CSSProperties}
         >
           {isLoading
             ? Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="flex-shrink-0 snap-start space-y-2" style={{ width: "148px" }}>
-                  <div className="rounded-xl shimmer" style={{ width: "148px", height: "148px" }} />
+                <div key={i} className="flex-shrink-0 snap-start space-y-2" style={{ width: cardSize }}>
+                  <div className="rounded-xl shimmer" style={{ width: cardSize, height: cardSize }} />
                   <div className="h-3 shimmer rounded w-3/4" />
                   <div className="h-2.5 shimmer rounded w-1/2" />
                 </div>
@@ -86,18 +86,18 @@ export default function RowAlbums({ title, albums, isLoading }: RowAlbumsProps) 
                   href={getAlbumHref(album.link)}
                   onMouseEnter={() => handlePrefetchAlbum(album.link)}
                   className="flex-shrink-0 snap-start cursor-pointer block text-left"
-                  style={{ width: "148px" }}
+                  style={{ width: cardSize }}
                 >
                   <div
                     className="relative rounded-xl overflow-hidden bg-[#282828] shadow-lg"
-                    style={{ width: "148px", height: "148px" }}
+                    style={{ width: cardSize, height: cardSize }}
                   >
                     {album.image ? (
                       <Image
                         src={album.image}
                         alt={album.name}
-                        width={148}
-                        height={148}
+                        width={cardSize}
+                        height={cardSize}
                         className="w-full h-full object-cover"
                         loading="lazy"
                       />
@@ -116,8 +116,6 @@ export default function RowAlbums({ title, albums, isLoading }: RowAlbumsProps) 
                   </div>
                 </Link>
               ))}
-          {/* Trailing spacer so last card has right-side clearance */}
-          <div className="flex-shrink-0" style={{ width: "4px" }} />
         </div>
       </div>
 
