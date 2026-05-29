@@ -85,7 +85,7 @@ export default function RowAlbums({ title, albums, isLoading, mobileCardSize = "
                   key={album.id}
                   href={getAlbumHref(album.link)}
                   onMouseEnter={() => handlePrefetchAlbum(album.link)}
-                  className="flex-shrink-0 snap-start cursor-pointer block text-left"
+                  className="flex-shrink-0 snap-start cursor-pointer block text-left scroll-ml-4"
                   style={{ width: cardSize }}
                 >
                   <div

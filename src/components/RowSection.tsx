@@ -60,7 +60,7 @@ export default function RowSection({ title, songs, isLoading, onSongSelected, mo
                 return (
                   <div
                     key={song.id}
-                    className="flex-shrink-0 snap-start cursor-pointer"
+                    className="flex-shrink-0 snap-start cursor-pointer scroll-ml-4"
                     style={{ width: cardSize }}
                     onClick={() => onSongSelected?.(song)}
                   >

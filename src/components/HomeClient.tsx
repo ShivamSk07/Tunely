@@ -6,12 +6,31 @@ import { useSession } from "next-auth/react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Play, Pause, ArrowRight, Heart, BarChart2, ListMusic, User, Search, Compass } from "lucide-react"
+import { Play, Pause, ArrowRight, Heart, BarChart2, ListMusic, User, Search, Compass, Sparkles, Shuffle, Loader2 } from "lucide-react"
 import RowSection from "@/components/RowSection"
 import RowAlbums from "@/components/RowAlbums"
 import { usePlayerStore, Song } from "@/store/usePlayerStore"
 import { useAppStore } from "@/store/useAppStore"
 import { FALLBACK_TRENDING_SONGS } from "@/lib/musicApi"
+
+// Hindi romantic songs shuffle config
+
+const SHUFFLING_TITLES = [
+  "Kabira - Arijit Singh",
+  "Apna Bana Le - Arijit Singh",
+  "Brown Munde - AP Dhillon",
+  "Kesariya - Pritam",
+  "Chaleya - Anirudh",
+  "Tum Hi Ho - Arijit Singh",
+  "Mi Amor - Sharn",
+  "Tu Hai Kahan - Aur",
+  "Kahani Suno - Kaifi Khalil",
+  "Softly - Karan Aujla",
+  "Amplifier - Imran Khan",
+  "Excuses - AP Dhillon",
+  "Ve Kamleya - Arijit Singh",
+  "Heeriye - Jasleen Royal"
+]
 
 // ── TYPES ──
 interface AlbumItem {
@@ -523,9 +542,98 @@ export default function HomeClient({ initialTrending, initialAlbums, initialModu
   const [spotlightArtist, setSpotlightArtist] = React.useState(SPOTLIGHT_ARTISTS[0])
   const [spotlightImg, setSpotlightImg] = React.useState(spotlightArtist.image)
 
+  // Magic Shuffle Interactive Widget States
+  const [shuffleState, setShuffleState] = React.useState<"idle" | "shuffling" | "success">("idle")
+  const [shuffleSong, setShuffleSong] = React.useState<Song | null>(null)
+  const [shufflingTitle, setShufflingTitle] = React.useState("Shuffling vibes...")
+  const shuffleIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null)
+  const trendingSongsRef = React.useRef<Song[]>([])
+  const shuffledHistoryRef = React.useRef<string[]>([])
+  const romanticSongsCacheRef = React.useRef<Song[]>([])
+
   React.useEffect(() => {
     setSpotlightImg(spotlightArtist.image)
   }, [spotlightArtist])
+
+  const handleMagicShuffle = React.useCallback(async () => {
+    // Prevent double-trigger
+    if (shuffleIntervalRef.current !== null && shuffleState === "shuffling") return
+
+    // Clear any stale interval immediately
+    if (shuffleIntervalRef.current) {
+      clearInterval(shuffleIntervalRef.current)
+      shuffleIntervalRef.current = null
+    }
+
+    setShuffleState("shuffling")
+    setShuffleSong(null)
+
+    // Kick off title cycling animation
+    let titleIndex = 0
+    shuffleIntervalRef.current = setInterval(() => {
+      titleIndex = (titleIndex + 1) % SHUFFLING_TITLES.length
+      setShufflingTitle(SHUFFLING_TITLES[Math.floor(Math.random() * SHUFFLING_TITLES.length)])
+    }, 90)
+
+    // Wait exactly 2 seconds for a beautiful, satisfying spin
+    await new Promise<void>((resolve) => setTimeout(resolve, 2000))
+
+    // Stop interval
+    if (shuffleIntervalRef.current) {
+      clearInterval(shuffleIntervalRef.current)
+      shuffleIntervalRef.current = null
+    }
+
+    let songsList: Song[] = [...romanticSongsCacheRef.current]
+
+    // Fallback if cache is empty: search on the fly or use real trending songs (excluding SoundHelix mock ones)
+    if (songsList.length === 0) {
+      try {
+        const res = await fetch(`/api/search?query=${encodeURIComponent("hindi romantic hits arijit pritam")}&type=songs&lang=hindi`)
+        if (res.ok) {
+          const data = await res.json()
+          songsList = ((data.songs || []) as Song[]).filter((s) => !s.id.startsWith("fallback_"))
+          romanticSongsCacheRef.current = songsList
+        }
+      } catch (err) {
+        console.warn("Failed to fetch inside shuffle loop:", err)
+      }
+    }
+
+    // Ultimate fallback if still empty: trending songs excluding fallbacks
+    if (songsList.length === 0) {
+      songsList = trendingSongsRef.current.filter((s) => !s.id.startsWith("fallback_"))
+    }
+
+    if (songsList.length === 0) {
+      setShuffleState("idle")
+      return
+    }
+
+    // Filter out recently played songs to prevent repeating
+    let eligibleSongs = songsList.filter((s) => !shuffledHistoryRef.current.includes(s.id))
+    if (eligibleSongs.length === 0) {
+      // Reset history if all songs have been played to start over
+      shuffledHistoryRef.current = []
+      eligibleSongs = songsList
+    }
+
+    const chosenSong = eligibleSongs[Math.floor(Math.random() * eligibleSongs.length)]
+    
+    // Add to history (limit to last 12 songs)
+    shuffledHistoryRef.current.push(chosenSong.id)
+    if (shuffledHistoryRef.current.length > 12) {
+      shuffledHistoryRef.current.shift()
+    }
+
+    setShuffleSong(chosenSong)
+    setShuffleState("success")
+
+    // Play immediately
+    const idx = songsList.findIndex((s) => s.id === chosenSong.id)
+    setQueue(songsList, idx === -1 ? 0 : idx)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shuffleState])
 
   const setAppReady = useAppStore((state) => state.setAppReady)
 
@@ -539,6 +647,23 @@ export default function HomeClient({ initialTrending, initialAlbums, initialModu
     // Select random Hindi spotlight artist on mount
     const randomArtist = SPOTLIGHT_ARTISTS[Math.floor(Math.random() * SPOTLIGHT_ARTISTS.length)]
     setSpotlightArtist(randomArtist)
+
+    // Pre-fetch Hindi romantic songs list to make shuffling instantaneous and smooth!
+    const prefetchRomanticSongs = async () => {
+      try {
+        const res = await fetch(`/api/search?query=${encodeURIComponent("hindi romantic hits arijit pritam shreya")}&type=songs&lang=hindi`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data.songs && data.songs.length > 0) {
+            // Filter out any SoundHelix mock fallbacks right away
+            romanticSongsCacheRef.current = data.songs.filter((s: Song) => s.id && !s.id.startsWith("fallback_"))
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to prefetch romantic songs:", err)
+      }
+    }
+    prefetchRomanticSongs()
 
     // Server already fetched data — signal app is ready immediately
     setAppReady()
@@ -611,6 +736,12 @@ export default function HomeClient({ initialTrending, initialAlbums, initialModu
     setQueue(list, idx === -1 ? 0 : idx)
   }
 
+  // Daily seed so quick picks change each day but are stable within the day
+  const dailySeed = React.useMemo(() => {
+    const d = new Date()
+    return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate()
+  }, [])
+
   const trendingSongs = React.useMemo(() => {
     let list = seededShuffle(trendingSongsRaw, sessionSeed)
     if (list.length < 6) {
@@ -625,8 +756,13 @@ export default function HomeClient({ initialTrending, initialAlbums, initialModu
     return list
   }, [trendingSongsRaw, sessionSeed])
 
-  const quickPicks = trendingSongs.slice(0, 6)
-  const featuredSong = trendingSongs[0]
+  // Keep trendingSongsRef in sync — must be after trendingSongs is declared
+  React.useEffect(() => { trendingSongsRef.current = trendingSongs }, [trendingSongs])
+
+  // Quick picks use daily seed so they stay fixed for the day but change day-to-day
+  const quickPicks = React.useMemo(() => {
+    return seededShuffle(trendingSongs, dailySeed).slice(0, 6)
+  }, [trendingSongs, dailySeed])
 
   return (
     <div className="min-h-full pb-36 md:pb-12">
@@ -636,77 +772,7 @@ export default function HomeClient({ initialTrending, initialAlbums, initialModu
         <p className="md:hidden text-sm text-[#B3B3B3] mt-1">What do you want to listen to?</p>
       </div>
 
-      {/* ── MOBILE HERO: featured pick (replaces quick-pick cards on small screens) ── */}
-      <div className="md:hidden px-4 mb-6">
-        {isTrendingLoading ? (
-          <div className="aspect-[5/3] rounded-2xl shimmer" />
-        ) : featuredSong ? (
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => {
-              if (currentSong?.id === featuredSong.id) {
-                if (isPlaying) pause()
-                else play()
-              } else {
-                handleSongPlay(trendingSongs, featuredSong)
-              }
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault()
-                if (currentSong?.id === featuredSong.id) {
-                  if (isPlaying) pause()
-                  else play()
-                } else {
-                  handleSongPlay(trendingSongs, featuredSong)
-                }
-              }
-            }}
-            className="relative aspect-[5/3] rounded-2xl overflow-hidden cursor-pointer active:scale-[0.99] transition-transform"
-          >
-            <Image
-              src={featuredSong.image || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&h=480&auto=format&fit=crop"}
-              alt={featuredSong.name}
-              fill
-              sizes="100vw"
-              className="object-cover"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-4">
-              <span className="text-[10px] font-black uppercase tracking-widest text-[#6C63FF]">Pick for you</span>
-              <h2 className="text-lg font-black text-white mt-1 line-clamp-1">{featuredSong.name}</h2>
-              <p className="text-xs text-[#B3B3B3] truncate mt-0.5">{featuredSong.artist}</p>
-              <div className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#6C63FF] text-white text-xs font-bold shadow-lg">
-                {currentSong?.id === featuredSong.id && isPlaying ? (
-                  <><Pause size={14} className="fill-white" /> Pause</>
-                ) : (
-                  <><Play size={14} className="fill-white ml-0.5" /> Play now</>
-                )}
-              </div>
-            </div>
-          </div>
-        ) : null}
-        <div className="flex gap-2 mt-3">
-          <Link
-            href="/search"
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1a1a24] text-white text-xs font-bold hover:bg-[#282828] transition-colors"
-          >
-            <Search size={14} className="text-[#6C63FF]" />
-            Search
-          </Link>
-          <Link
-            href="/playlists"
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1a1a24] text-white text-xs font-bold hover:bg-[#282828] transition-colors"
-          >
-            <Compass size={14} className="text-[#FF6584]" />
-            Playlists
-          </Link>
-        </div>
-      </div>
-
-      {/* ── QUICK PICKS: desktop only (2-col grid) ── */}
+      {/* ── DESKTOP ONLY: Quick Picks 6-card grid (daily rotation) ── */}
       {(isTrendingLoading || quickPicks.length > 0) && (
         <div className="hidden md:block px-4 md:px-6 mb-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
@@ -720,12 +786,8 @@ export default function HomeClient({ initialTrending, initialAlbums, initialModu
                     <div
                       key={song.id}
                       onClick={() => {
-                        if (isCurrent) {
-                          if (isPlaying) pause()
-                          else play()
-                        } else {
-                          handleSongPlay(quickPicks, song)
-                        }
+                        if (isCurrent) { if (isPlaying) pause(); else play() }
+                        else handleSongPlay(quickPicks, song)
                       }}
                       className={`flex items-center gap-3 rounded-xl cursor-pointer group transition-all overflow-hidden ${
                         isCurrent ? "bg-[#6C63FF22] border border-[#6C63FF44]" : "bg-[#1a1a24] hover:bg-[#282828]"
@@ -740,9 +802,7 @@ export default function HomeClient({ initialTrending, initialAlbums, initialModu
                         loading="lazy"
                       />
                       <div className="flex-1 min-w-0 py-2">
-                        <p className={`text-sm font-bold truncate ${isCurrent ? "text-[#6C63FF]" : "text-white"}`}>
-                          {song.name}
-                        </p>
+                        <p className={`text-sm font-bold truncate ${isCurrent ? "text-[#6C63FF]" : "text-white"}`}>{song.name}</p>
                         <p className="text-xs text-[#B3B3B3] truncate mt-0.5">{song.artist}</p>
                       </div>
                       <div className={`w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-full mr-3 transition-all ${
@@ -760,6 +820,164 @@ export default function HomeClient({ initialTrending, initialAlbums, initialModu
           </div>
         </div>
       )}
+
+      {/* ── MOBILE ONLY: Magic Shuffle premium card ── */}
+      <div className="md:hidden px-4 mt-8 mb-8 select-none">
+        {/* Card Container with glassmorphism and subtle neon glow effects */}
+        <div
+          className="relative overflow-hidden rounded-2xl cursor-pointer transition-all duration-300 active:scale-[0.98] shadow-2xl"
+          style={{
+            background: "linear-gradient(135deg, rgba(24, 23, 44, 0.45) 0%, rgba(13, 12, 24, 0.75) 100%)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            border: "1px solid rgba(255, 255, 255, 0.11)",
+            boxShadow: "0 12px 40px -10px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.09)",
+          }}
+          onClick={shuffleState !== "shuffling" ? handleMagicShuffle : undefined}
+        >
+          {/* Ambient Glows */}
+          <div className="absolute top-[-30%] right-[-10%] w-40 h-40 rounded-full bg-[#6C63FF]/15 blur-[35px] pointer-events-none" />
+          <div className="absolute bottom-[-30%] left-[-15%] w-32 h-32 rounded-full bg-[#8B5CF6]/10 blur-[25px] pointer-events-none" />
+
+          {/* Blurred album art backdrop on success */}
+          {shuffleState === "success" && shuffleSong?.image && (
+            <div
+              className="absolute inset-0 opacity-[0.16] pointer-events-none transition-opacity duration-500"
+              style={{
+                backgroundImage: `url(${shuffleSong.image})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                filter: "blur(32px)",
+                transform: "scale(1.2)",
+              }}
+            />
+          )}
+
+          {/* Top accent glow line */}
+          <div
+            className="absolute top-0 left-0 right-0 h-[1.5px] opacity-80"
+            style={{
+              background: shuffleState === "success"
+                ? "linear-gradient(90deg, transparent 0%, rgba(29, 185, 84, 0.8) 50%, transparent 100%)"
+                : "linear-gradient(90deg, transparent 0%, rgba(108, 99, 255, 0.6) 50%, transparent 100%)",
+            }}
+          />
+
+          <div className="relative flex items-center gap-[18px] p-5 z-10">
+            {/* Artwork / state box (Squircle style with premium shadow) */}
+            <div
+              className="relative flex-shrink-0 w-[68px] h-[68px] rounded-xl overflow-hidden"
+              style={{
+                boxShadow: "0 8px 24px rgba(0, 0, 0, 0.65)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+              }}
+            >
+              {shuffleState === "idle" && (
+                <div
+                  className="w-full h-full flex items-center justify-center"
+                  style={{
+                    background: "linear-gradient(135deg, #2b2654 0%, #15132d 100%)",
+                  }}
+                >
+                  <Shuffle size={24} strokeWidth={2} className="text-[#a59bf5] drop-shadow-[0_2px_8px_rgba(108,99,255,0.4)]" />
+                </div>
+              )}
+              {shuffleState === "shuffling" && (
+                <div
+                  className="w-full h-full flex items-center justify-center relative overflow-hidden"
+                  style={{
+                    background: "linear-gradient(135deg, #1b1932 0%, #0d0c18 100%)",
+                  }}
+                >
+                  {/* Outer spinning ring decoration */}
+                  <div className="absolute inset-1.5 rounded-full border border-dashed border-white/10 animate-[spin_10s_linear_infinite]" />
+                  <div className="w-8 h-8 rounded-full border-[2.5px] border-white/5 border-t-[#6C63FF] animate-spin" />
+                </div>
+              )}
+              {shuffleState === "success" && shuffleSong && (
+                <Image
+                  src={shuffleSong.image || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=120&h=120&auto=format&fit=crop"}
+                  alt={shuffleSong.name}
+                  fill
+                  sizes="68px"
+                  className="object-cover"
+                />
+              )}
+            </div>
+
+            {/* Text content with beautiful line height & details */}
+            <div className="flex-1 min-w-0">
+              {shuffleState === "idle" && (
+                <div className="flex flex-col">
+                  <div className="flex items-center mb-1.5">
+                    <p className="text-[9px] font-extrabold text-[#A78BFA] uppercase tracking-[0.18em]">Magic Discovery</p>
+                  </div>
+                  <h3 className="text-[17px] font-black text-white leading-tight tracking-tight">Surprise Me</h3>
+                  <p className="text-[12px] text-white/50 font-medium mt-1">Tap to spin your personal mix</p>
+                </div>
+              )}
+              {shuffleState === "shuffling" && (
+                <div className="flex flex-col">
+                  <div className="flex items-center mb-1.5">
+                    <p className="text-[9px] font-extrabold text-[#EC4899] uppercase tracking-[0.18em]">Spinning Tracks</p>
+                  </div>
+                  <h3 className="text-[15px] font-bold text-white/90 truncate leading-tight tracking-tight">{shufflingTitle}</h3>
+                  <div className="flex items-end gap-[3px] mt-2.5 h-3">
+                    {[3, 5, 4, 6, 3, 5, 4].map((h, i) => (
+                      <div
+                        key={i}
+                        className="w-[3px] rounded-full bg-[#6C63FF]"
+                        style={{
+                          height: `${h * 2}px`,
+                          opacity: 0.85,
+                          animation: `pulse ${0.4 + i * 0.08}s ease-in-out infinite alternate`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {shuffleState === "success" && shuffleSong && (
+                <div className="flex flex-col">
+                  <div className="flex items-center mb-1.5">
+                    <p className="text-[9px] font-extrabold text-[#1DB954] uppercase tracking-[0.18em]">Now Playing</p>
+                  </div>
+                  <h3 className="text-[17px] font-black text-white truncate leading-tight tracking-tight">{shuffleSong.name}</h3>
+                  <p className="text-[12px] text-[#A3A3A3] truncate mt-1 font-semibold">{shuffleSong.artist}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Action button */}
+            <button
+              onClick={(e) => { e.stopPropagation(); if (shuffleState !== "shuffling") handleMagicShuffle() }}
+              disabled={shuffleState === "shuffling"}
+              className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 active:scale-90 shadow-lg"
+              style={{
+                background: shuffleState === "shuffling"
+                  ? "rgba(255,255,255,0.04)"
+                  : shuffleState === "success"
+                    ? "#1DB954"
+                    : "#6C63FF",
+                border: shuffleState === "shuffling"
+                  ? "1px solid rgba(255,255,255,0.05)"
+                  : "none",
+                boxShadow: shuffleState === "shuffling"
+                  ? "none"
+                  : shuffleState === "success"
+                    ? "0 6px 20px rgba(29, 185, 84, 0.4)"
+                    : "0 6px 20px rgba(108, 99, 255, 0.4)",
+              }}
+            >
+              {shuffleState === "shuffling" ? (
+                <Loader2 size={18} strokeWidth={2.5} className="animate-spin text-white/35" />
+              ) : (
+                <Shuffle size={18} strokeWidth={2.5} className="text-white" />
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
 
 
       {/* ── TRENDING SECTION ── */}
@@ -938,7 +1156,7 @@ export default function HomeClient({ initialTrending, initialAlbums, initialModu
                   <Link
                     key={artist.id}
                     href={`/artist?link=${encodeURIComponent(artist.link)}`}
-                    className="flex-shrink-0 w-[88px] text-center group snap-start block font-normal"
+                    className="flex-shrink-0 w-[88px] text-center group snap-start block font-normal scroll-ml-4"
                   >
                     <div className="w-[72px] h-[72px] rounded-full overflow-hidden mx-auto bg-[#1a1a24] border border-white/5 mb-2 group-hover:border-[#6C63FF66] transition-all group-hover:scale-105 duration-300 relative shadow-lg">
                       {artist.image ? (

@@ -35,18 +35,19 @@ export default function JioSaavnPlaylistClient({ id, initialPlaylist }: Props) {
   const router = useRouter()
   const setQueue = usePlayerStore((s) => s.setQueue)
 
-  const { data: playlist, isLoading, isError } = useQuery<PlaylistData>({
+  const { data: playlist, isLoading, isError, isFetched } = useQuery<PlaylistData>({
     queryKey: ["jiosaavn-playlist", id],
     queryFn: async () => {
       if (!id) throw new Error("No playlist ID")
       const res = await fetch(`/api/playlist?id=${id}`)
       if (!res.ok) throw new Error("Failed to fetch playlist")
-      return res.json()
+      const json = await res.json()
+      // API may return data nested under `data` key or directly
+      return json.data || json
     },
     enabled: !!id,
-    initialData: initialPlaylist || undefined,
-    initialDataUpdatedAt: initialPlaylist ? Date.now() : undefined,
     staleTime: 300000,
+    retry: 2,
   })
 
   const { data: similarPlaylists = [] } = useQuery<SimilarPlaylist[]>({
@@ -62,7 +63,7 @@ export default function JioSaavnPlaylistClient({ id, initialPlaylist }: Props) {
     staleTime: 600000,
   })
 
-  if (isLoading || !playlist) {
+  if (isLoading) {
     return (
       <div className="px-6 py-6 max-w-6xl mx-auto space-y-6 animate-pulse">
         <div className="h-6 w-16 bg-[#1a1a24] rounded-lg" />
@@ -80,11 +81,12 @@ export default function JioSaavnPlaylistClient({ id, initialPlaylist }: Props) {
     )
   }
 
-  if (isError) {
+  if (isError || (isFetched && !playlist)) {
     return (
       <div className="flex flex-col items-center justify-center h-[50vh] gap-4">
         <ListMusic size={48} className="text-[#727272]" />
         <p className="text-white font-bold">Playlist not found</p>
+        <p className="text-[#B3B3B3] text-sm">Could not load playlist data. Try again later.</p>
         <button
           onClick={() => router.back()}
           className="px-6 py-2.5 bg-white text-black font-bold rounded-full text-sm hover:scale-105 transition-transform"
@@ -95,15 +97,23 @@ export default function JioSaavnPlaylistClient({ id, initialPlaylist }: Props) {
     )
   }
 
+  if (!playlist) return null
+
   const songsList: Song[] = (playlist.songs || []).map((s: any) => ({
-    id: s.id || s.songId,
-    name: s.name || s.songName,
-    artist: s.artist || s.subtitle || "Unknown",
-    image: s.image || "",
-    streamUrl: s.streamUrl || "",
+    id: s.id || s.songId || "",
+    name: s.name || s.songName || s.title || "Unknown",
+    artist: s.artist || s.subtitle || s.primaryArtists || "Unknown",
+    image: (Array.isArray(s.image)
+      ? (s.image[2]?.link || s.image[s.image.length - 1]?.link || "")
+      : (s.image || "")
+    ).replace("http://", "https://"),
+    streamUrl: (Array.isArray(s.download_url)
+      ? (s.download_url[4]?.link || s.download_url[s.download_url.length - 1]?.link || "")
+      : (s.streamUrl || "")
+    ).replace("http://", "https://"),
     duration: s.duration || 0,
-    downloadUrls: s.downloadUrls,
-  }))
+    downloadUrls: s.downloadUrls || s.download_url,
+  })).filter((s: Song) => s.id && s.streamUrl)
 
   const handlePlayAll = (shuffle = false) => {
     if (songsList.length === 0) return
