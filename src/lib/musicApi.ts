@@ -75,7 +75,7 @@ interface CacheEntry {
 }
 
 const memoryCache = new Map<string, CacheEntry>()
-const CACHE_TTL_MS = 60 * 60 * 1000 // 60 minutes cache (1 hour)
+const CACHE_TTL_MS = 4 * 60 * 60 * 1000 // 4-hour in-memory cache
 
 function getCachedData(key: string): any | null {
   const entry = memoryCache.get(key)

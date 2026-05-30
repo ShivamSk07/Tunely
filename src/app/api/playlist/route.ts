@@ -11,20 +11,16 @@ export async function GET(req: NextRequest) {
     const id = searchParams.get("id")
 
     if (id) {
-      // JioSaavn playlist by ID (featured playlists from /modules)
+      // JioSaavn playlist by ID — cache 5 min at CDN, stale-while-revalidate 10 min
       const data = await fetchJioSaavnPlaylistById(id)
-      return NextResponse.json(data, {
-        headers: { "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate" }
-      })
+      return jsonCached(data, 300, 600)
     }
 
     if (!link) {
       return NextResponse.json({ error: "Missing link or id parameter" }, { status: 400 })
     }
     const data = await fetchPlaylistDetails(link)
-    return NextResponse.json(data, {
-      headers: { "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate" }
-    })
+    return jsonCached(data, 300, 600)
   } catch (error: any) {
     console.error("Error in playlist API proxy:", error)
     return NextResponse.json({ error: error.message || "Failed to fetch playlist details" }, { status: 500 })

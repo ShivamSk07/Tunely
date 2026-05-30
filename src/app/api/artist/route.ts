@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Missing link parameter" }, { status: 400 })
     }
     const data = await fetchArtistDetails(link)
-    return jsonCached(data, 300, 600)
+    return jsonCached(data, 600, 1800)
   } catch (error: any) {
     console.error("Error in artist API proxy:", error)
     return NextResponse.json({ error: error.message || "Failed to fetch artist details" }, { status: 500 })

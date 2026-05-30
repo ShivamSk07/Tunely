@@ -14,16 +14,18 @@ const nextConfig = {
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "**.googleusercontent.com" },
     ],
-    minimumCacheTTL: 86400,
+    minimumCacheTTL: 604800, // 7 days image CDN cache
     formats: ["image/webp", "image/avif"],
   },
   experimental: {
-    optimizePackageImports: ["lucide-react"],
+    optimizePackageImports: ["lucide-react", "@tanstack/react-query"],
   },
   // Compress responses
   compress: true,
   // Power header hide
   poweredByHeader: false,
+  // Turbopack mode for faster local builds
+  // Don't set headers here — handled by vercel.json for edge caching
 }
 
 export default nextConfig
