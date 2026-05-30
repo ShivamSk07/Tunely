@@ -5,37 +5,43 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { 
-  Search, Disc, User, Loader2, Play
+  Search, Disc, User, Loader2, Play, Music, Flame, Sparkles, Heart, Moon, Zap, Compass, Activity, Volume2, Sun, Mic
 } from "lucide-react"
 import SongPill from "@/components/SongPill"
 import { Song, usePlayerStore } from "@/store/usePlayerStore"
 
 const GENRE_CATEGORIES = [
-  // Pop — mic on stage, pop concert lights
-  { label: "Pop", color: "from-[#1DB954] to-[#158f3e]", query: "Pop Hits", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=400&auto=format&fit=crop" },
-  // Hip-Hop — microphone + rap/hip-hop stage
-  { label: "Hip-Hop", color: "from-[#FF6B35] to-[#cc4d1a]", query: "Hip Hop", image: "https://images.unsplash.com/photo-1524678606370-a47ad25cb82a?q=80&w=400&auto=format&fit=crop" },
-  // Bollywood — colorful Indian cinema / dance
-  { label: "Bollywood", color: "from-[#E91E63] to-[#ad1457]", query: "Bollywood Hits", image: "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?q=80&w=400&auto=format&fit=crop" },
-  // Romantic — couple silhouette at sunset
-  { label: "Romantic", color: "from-[#9C27B0] to-[#6a1b9a]", query: "Romantic Songs", image: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=400&auto=format&fit=crop" },
-  // Lo-Fi — cozy desk with headphones, rain window
-  { label: "Lo-Fi", color: "from-[#607D8B] to-[#37474f]", query: "Lofi Chill", image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=400&auto=format&fit=crop" },
-  // EDM — DJ booth with laser lights on stage
-  { label: "EDM", color: "from-[#00BCD4] to-[#00838f]", query: "EDM Dance", image: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?q=80&w=400&auto=format&fit=crop" },
-  // Sufi — dervish spinning, spiritual
-  { label: "Sufi", color: "from-[#FF9800] to-[#e65100]", query: "Sufi Music", image: "https://images.unsplash.com/photo-1604537529428-15bcbeecfe4d?q=80&w=400&auto=format&fit=crop" },
-  // Workout — weights, gym, energy
-  { label: "Workout", color: "from-[#F44336] to-[#b71c1c]", query: "Workout Energy", image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=400&auto=format&fit=crop" },
-  // Classical — violin / piano keys close up
-  { label: "Classical", color: "from-[#795548] to-[#4e342e]", query: "Indian Classical", image: "https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?q=80&w=400&auto=format&fit=crop" },
-  // Party — crowd hands up, neon lights
-  { label: "Party", color: "from-[#FF4081] to-[#c51162]", query: "Party Anthems", image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=400&auto=format&fit=crop" },
-  // Devotional — agarbatti/diya lamp, temple spiritual atmosphere
-  { label: "Devotional", color: "from-[#FFC107] to-[#ff6f00]", query: "Bhajan Devotional", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400&auto=format&fit=crop" },
-  // Indie — guitarist on rooftop, artsy
-  { label: "Indie", color: "from-[#3F51B5] to-[#1a237e]", query: "Indie Music", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400&auto=format&fit=crop" },
+  { label: "Pop", gradient: "from-[#EC008C] to-[#FC6767]", query: "Pop Hits", icon: "music" },
+  { label: "Hip-Hop", gradient: "from-[#FF5F6D] to-[#FFC371]", query: "Hip Hop", icon: "flame" },
+  { label: "Bollywood", gradient: "from-[#F12711] to-[#F5AF19]", query: "Bollywood Hits", icon: "sparkles" },
+  { label: "Romantic", gradient: "from-[#E040FB] to-[#FF4081]", query: "Romantic Songs", icon: "heart" },
+  { label: "Lo-Fi", gradient: "from-[#1F1C2C] to-[#928DAB]", query: "Lofi Chill", icon: "moon" },
+  { label: "EDM", gradient: "from-[#00c6ff] to-[#0072ff]", query: "EDM Dance", icon: "zap" },
+  { label: "Sufi", gradient: "from-[#ffe259] to-[#ffa751]", query: "Sufi Music", icon: "compass" },
+  { label: "Workout", gradient: "from-[#f857a6] to-[#ff5858]", query: "Workout Energy", icon: "activity" },
+  { label: "Classical", gradient: "from-[#3A1C71] to-[#D76D77]", query: "Indian Classical", icon: "disc" },
+  { label: "Party", gradient: "from-[#11998e] to-[#38ef7d]", query: "Party Anthems", icon: "volume-2" },
+  { label: "Devotional", gradient: "from-[#ff9966] to-[#ff5e62]", query: "Bhajan Devotional", icon: "sun" },
+  { label: "Indie", gradient: "from-[#4568DC] to-[#B06AB8]", query: "Indie Music", icon: "mic" },
 ]
+
+function getGenreIcon(iconName: string) {
+  switch (iconName) {
+    case "music": return <Music size={60} className="absolute -right-2 -bottom-2 text-white/20 group-hover:text-white/40 group-hover:rotate-12 group-hover:scale-110 transition-all duration-500 rotate-[25deg] pointer-events-none" />
+    case "flame": return <Flame size={60} className="absolute -right-2 -bottom-2 text-white/20 group-hover:text-white/40 group-hover:rotate-12 group-hover:scale-110 transition-all duration-500 rotate-[25deg] pointer-events-none" />
+    case "sparkles": return <Sparkles size={60} className="absolute -right-2 -bottom-2 text-white/20 group-hover:text-white/40 group-hover:rotate-12 group-hover:scale-110 transition-all duration-500 rotate-[25deg] pointer-events-none" />
+    case "heart": return <Heart size={60} className="absolute -right-2 -bottom-2 text-white/20 group-hover:text-white/40 group-hover:rotate-12 group-hover:scale-110 transition-all duration-500 rotate-[25deg] pointer-events-none" />
+    case "moon": return <Moon size={60} className="absolute -right-2 -bottom-2 text-white/20 group-hover:text-white/40 group-hover:rotate-12 group-hover:scale-110 transition-all duration-500 rotate-[25deg] pointer-events-none" />
+    case "zap": return <Zap size={60} className="absolute -right-2 -bottom-2 text-white/20 group-hover:text-white/40 group-hover:rotate-12 group-hover:scale-110 transition-all duration-500 rotate-[25deg] pointer-events-none" />
+    case "compass": return <Compass size={60} className="absolute -right-2 -bottom-2 text-white/20 group-hover:text-white/40 group-hover:rotate-12 group-hover:scale-110 transition-all duration-500 rotate-[25deg] pointer-events-none" />
+    case "activity": return <Activity size={60} className="absolute -right-2 -bottom-2 text-white/20 group-hover:text-white/40 group-hover:rotate-12 group-hover:scale-110 transition-all duration-500 rotate-[25deg] pointer-events-none" />
+    case "disc": return <Disc size={60} className="absolute -right-2 -bottom-2 text-white/20 group-hover:text-white/40 group-hover:rotate-12 group-hover:scale-110 transition-all duration-500 rotate-[25deg] pointer-events-none" />
+    case "volume-2": return <Volume2 size={60} className="absolute -right-2 -bottom-2 text-white/20 group-hover:text-white/40 group-hover:rotate-12 group-hover:scale-110 transition-all duration-500 rotate-[25deg] pointer-events-none" />
+    case "sun": return <Sun size={60} className="absolute -right-2 -bottom-2 text-white/20 group-hover:text-white/40 group-hover:rotate-12 group-hover:scale-110 transition-all duration-500 rotate-[25deg] pointer-events-none" />
+    case "mic": return <Mic size={60} className="absolute -right-2 -bottom-2 text-white/20 group-hover:text-white/40 group-hover:rotate-12 group-hover:scale-110 transition-all duration-500 rotate-[25deg] pointer-events-none" />
+    default: return <Music size={60} className="absolute -right-2 -bottom-2 text-white/20 group-hover:text-white/40 group-hover:rotate-12 group-hover:scale-110 transition-all duration-500 rotate-[25deg] pointer-events-none" />
+  }
+}
 
 function SearchContent() {
   const router = useRouter()
@@ -137,7 +143,7 @@ function SearchContent() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="What do you want to play?"
-            className="w-full pl-14 pr-6 py-3.5 md:py-4 bg-[#282828] text-white placeholder-[#B3B3B3] rounded-full text-base font-semibold outline-none transition-all hover:bg-[#333] focus:bg-[#333] focus:ring-2 focus:ring-[#6C63FF] shadow-lg"
+            className="w-full pl-14 pr-6 py-3.5 md:py-4 bg-[#181824]/60 border border-[#6C63FF]/20 text-white placeholder-[#B3B3B3] rounded-full text-base font-semibold outline-none transition-all hover:bg-[#20202e] focus:bg-[#20202e] focus:ring-2 focus:ring-[#6C63FF]/60 focus:border-[#6C63FF]/60 shadow-[0_8px_30px_rgba(0,0,0,0.3)] focus:shadow-[0_0_20px_rgba(108,99,255,0.25)]"
             autoFocus={!!queryParam}
           />
           {isLoading && (
@@ -155,25 +161,20 @@ function SearchContent() {
               <div
                 key={cat.label}
                 onClick={() => { setSearchTerm(cat.query); setDebouncedQuery(cat.query) }}
-                className="group relative overflow-hidden rounded-2xl aspect-[4/3] cursor-pointer shadow-lg hover:scale-[1.03] transition-all duration-300 border border-white/5 bg-[#181822]"
+                className={`group relative overflow-hidden rounded-2xl aspect-[4/3] cursor-pointer shadow-[0_8px_30px_rgba(0,0,0,0.4)] hover:scale-[1.03] transition-all duration-300 border border-white/10 bg-gradient-to-br ${cat.gradient}`}
               >
-                {/* Background image with hover zoom */}
-                <img
-                  src={cat.image}
-                  alt={cat.label}
-                  className="absolute inset-0 w-full h-full object-cover brightness-[0.6] group-hover:brightness-[0.7] group-hover:scale-115 transition-all duration-500"
-                  loading="lazy"
-                />
+                {/* Glassmorphic ambient overlay */}
+                <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-300" />
                 
-                {/* Glassmorphic/gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent transition-opacity duration-300 group-hover:opacity-90" />
-                
-                {/* Visual Accent/Glow */}
-                <div className="absolute -inset-px bg-gradient-to-br from-white/10 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                {/* Glowing light blob */}
+                <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-white/25 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500 pointer-events-none" />
+
+                {/* Floating, tilted Lucide Icon */}
+                {getGenreIcon(cat.icon)}
 
                 {/* Content */}
-                <div className="absolute inset-0 p-4 flex flex-col justify-end z-10">
-                  <p className="text-base md:text-lg font-black text-white tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                <div className="absolute inset-0 p-4 flex flex-col justify-between z-10">
+                  <p className="text-base md:text-lg font-black text-white tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
                     {cat.label}
                   </p>
                 </div>

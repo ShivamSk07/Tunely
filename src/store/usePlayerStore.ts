@@ -1,6 +1,32 @@
 import { create } from "zustand"
 import toast from "react-hot-toast"
 
+const updateStreak = (song: any) => {
+  if (typeof window === "undefined" || !song) return
+  const today = new Date().toDateString()
+  const data = JSON.parse(localStorage.getItem('streak_data') || '{}')
+
+  data.todayCount = (data.lastDate === today ? data.todayCount : 0) + 1
+  
+  const yesterday = new Date(Date.now() - 86400000).toDateString()
+  if (data.lastDate === yesterday) {
+    data.streakDays = (data.streakDays || 0) + 1
+  } else if (data.lastDate !== today) {
+    data.streakDays = 1
+  }
+  data.lastDate = today
+
+  // Artist tracking — from actual played songs only
+  const artists = data.artists || {}
+  const artistName = song?.artist || song?.subtitle || ''
+  if (artistName) {
+    artists[artistName] = (artists[artistName] || 0) + 1
+  }
+  data.artists = artists
+
+  localStorage.setItem('streak_data', JSON.stringify(data))
+}
+
 export interface Song {
   id: string
   name: string
@@ -163,6 +189,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
       const index = queue.findIndex((s) => s.id === updatedSong.id)
       if (index !== -1) {
         set({ currentSong: updatedSong, currentIndex: index })
+        updateStreak(updatedSong)
         
         // In radio mode, check if we need to fetch more songs (if near end of queue)
         if (isRadioMode && index >= queue.length - 3) {
@@ -173,6 +200,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
         const newQueue = [...queue, updatedSong]
         const newIndex = newQueue.length - 1
         set({ queue: newQueue, currentSong: updatedSong, currentIndex: newIndex })
+        updateStreak(updatedSong)
 
         // In radio mode, check if we need to fetch more songs
         if (isRadioMode && newIndex >= newQueue.length - 3) {
@@ -207,6 +235,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
           currentIndex: startIndex,
           isPlaying: true,
       })
+      updateStreak(song)
 
       // In radio mode, check if we need to prefetch right away
       const { isRadioMode } = get()
@@ -271,11 +300,13 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
       if (queue.length === 0) return
       
       const nextIndex = (currentIndex + 1) % queue.length
+      const nextSong = queue[nextIndex]
       set({
         currentIndex: nextIndex,
-        currentSong: queue[nextIndex],
+        currentSong: nextSong,
         isPlaying: true,
       })
+      updateStreak(nextSong)
 
       // If in radio mode, pre-fetch more songs automatically when 2 songs before the last song
       if (isRadioMode && nextIndex >= queue.length - 3) {
@@ -288,11 +319,13 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
       if (queue.length === 0) return
       
       const prevIndex = (currentIndex - 1 + queue.length) % queue.length
+      const prevSong = queue[prevIndex]
       set({
         currentIndex: prevIndex,
-        currentSong: queue[prevIndex],
+        currentSong: prevSong,
         isPlaying: true,
       })
+      updateStreak(prevSong)
     },
 
     seek: (time) => {

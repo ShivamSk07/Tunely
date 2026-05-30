@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic"
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    const query = searchParams.get("query")
+    const query = searchParams.get("query") || searchParams.get("q")
     const type = searchParams.get("type") || undefined
     
     const lang = searchParams.get("lang") || "hindi"

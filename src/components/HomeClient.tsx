@@ -1,1267 +1,966 @@
 "use client"
 
 import React from "react"
-import Image from "next/image"
-import { useSession } from "next-auth/react"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { Play, Pause, ArrowRight, Heart, BarChart2, ListMusic, User, Search, Compass, Sparkles, Shuffle, Loader2 } from "lucide-react"
-import RowSection from "@/components/RowSection"
-import RowAlbums from "@/components/RowAlbums"
-import { usePlayerStore, Song } from "@/store/usePlayerStore"
 import { useAppStore } from "@/store/useAppStore"
-import { FALLBACK_TRENDING_SONGS } from "@/lib/musicApi"
+import { usePlayerStore, Song } from "@/store/usePlayerStore"
+import SectionRow from "@/components/SectionRow"
+import UniversalCard from "@/components/UniversalCard"
+import HomeSkeleton from "@/components/HomeSkeleton"
+import toast from "react-hot-toast"
+import { 
+  Play, Pause, X, Flame, Trophy, Sparkles, Calendar, TrendingUp, Loader2 
+} from "lucide-react"
 
-// Hindi romantic songs shuffle config
-
-const SHUFFLING_TITLES = [
-  "Kabira - Arijit Singh",
-  "Apna Bana Le - Arijit Singh",
-  "Brown Munde - AP Dhillon",
-  "Kesariya - Pritam",
-  "Chaleya - Anirudh",
-  "Tum Hi Ho - Arijit Singh",
-  "Mi Amor - Sharn",
-  "Tu Hai Kahan - Aur",
-  "Kahani Suno - Kaifi Khalil",
-  "Softly - Karan Aujla",
-  "Amplifier - Imran Khan",
-  "Excuses - AP Dhillon",
-  "Ve Kamleya - Arijit Singh",
-  "Heeriye - Jasleen Royal"
-]
-
-// ── TYPES ──
-interface AlbumItem {
-  id: string
-  name: string
-  artist?: string
-  image: string
-  link: string
+interface HomeClientProps {
+  modules: any | null
 }
 
-interface PlaylistItem {
-  id: string
-  name: string
-  image: string
-  link: string
-  songCount?: number
-}
-
-interface ArtistItem {
-  id: string
-  name: string
-  image: string
-  link: string
-}
-
-interface ChartItem {
-  id: string
-  name: string
-  image: string
-  link: string
-}
-
-interface ModulesData {
-  trending_songs: Song[]
-  featured_playlists: PlaylistItem[]
-  charts: ChartItem[]
-  new_trending: Song[]
-  top_playlists: PlaylistItem[]
-  albums: AlbumItem[]
-  artist_recos: ArtistItem[]
-}
-
-interface LikedSongItem {
-  songId: string
-}
-
-interface Props {
-  initialTrending: Song[]
-  initialAlbums: AlbumItem[]
-  initialModules?: ModulesData | null
-}
-
-// Quick-access mood mixes
-const MOOD_MIXES = [
-  { label: "Sad",               query: "sad hindi songs",                key: "Chill",      gradient: "from-[#4f46e5] to-[#1e1b4b]" },
-  { label: "Party Hits",        query: "party hindi dance songs",        key: "Party",      gradient: "from-[#ec4899] to-[#9f1239]" },
-  { label: "Baarish Romantic",  query: "baarish hindi romantic songs",    key: "Sufi",       gradient: "from-[#059669] to-[#064e3b]" },
-  { label: "Gym Workout",       query: "gym workout hindi rap",          key: "Workout",    gradient: "from-[#ea580c] to-[#7c2d12]" },
-  { label: "Late Night Lofi",   query: "late night hindi lofi",          key: "Bollywood",  gradient: "from-[#607D8B] to-[#37474f]" },
-  { label: "Romantic Love",     query: "romantic hindi love songs",      key: "Romantic",   gradient: "from-[#be185d] to-[#500724]" },
-  { label: "Bhakti Morning",    query: "bhakti bhajan morning",          key: "Devotional", gradient: "from-[#FFC107] to-[#ff6f00]" },
-]
-
-const SPOTLIGHT_ARTISTS = [
-  {
-    name: "Arijit Singh",
-    link: "https://www.jiosaavn.com/artist/arijit-singh-songs/LlRWpHzy3Hk_",
-    image: "https://c.saavncdn.com/artists/Arijit_Singh_004_20241118063717_500x500.jpg",
-    description: "India's most streamed romantic icon. Discover heartfelt ballads, soft hits, and full album collections."
-  },
-  {
-    name: "Shreya Ghoshal",
-    link: "https://www.jiosaavn.com/artist/shreya-ghoshal-songs/W0j-f-38M78_",
-    image: "https://c.saavncdn.com/artists/Shreya_Ghoshal_004_20230612135424_500x500.jpg",
-    description: "The queen of modern melody. Stream Shreya's breathtaking hits and timeless cinematic blockbusters."
-  },
-  {
-    name: "Jubin Nautiyal",
-    link: "https://www.jiosaavn.com/artist/jubin-nautiyal-songs/L1PkWZgG-24_",
-    image: "https://c.saavncdn.com/artists/Jubin_Nautiyal_005_20230612140445_500x500.jpg",
-    description: "Master of soulful romantic hits. Dive into Jubin's beautiful collection of soft tunes and acoustic gems."
-  },
-  {
-    name: "Neha Kakkar",
-    link: "https://www.jiosaavn.com/artist/neha-kakkar-songs/c4-N59R-dsw_",
-    image: "https://c.saavncdn.com/artists/Neha_Kakkar_006_20200821105342_500x500.jpg",
-    description: "Bollywood's energetic chartbuster queen. Discover high-power party anthems and emotional masterpieces by Neha."
-  },
-  {
-    name: "Atif Aslam",
-    link: "https://www.jiosaavn.com/artist/atif-aslam-songs/96K4W,8,mlo_",
-    image: "https://c.saavncdn.com/artists/Atif_Aslam_004_20230612134259_500x500.jpg",
-    description: "A soulful voice that knows no borders. Experience the magical romantic blockbusters of legendary Atif Aslam."
-  },
-  {
-    name: "AP Dhillon",
-    link: "https://www.jiosaavn.com/artist/ap-dhillon-songs/X5,C2u,dMAM_",
-    image: "https://c.saavncdn.com/artists/AP_Dhillon_003_20230811122602_500x500.jpg",
-    description: "The pioneer of global Punjabi wave. Listen to brown munde anthems, synth-pop fusion, and high-energy beats."
-  },
-  {
-    name: "Diljit Dosanjh",
-    link: "https://www.jiosaavn.com/artist/diljit-dosanjh-songs/2gf-04PZ5As_",
-    image: "https://c.saavncdn.com/artists/Diljit_Dosanjh_004_20221004113110_500x500.jpg",
-    description: "Punjabi superstar and global sensation. Feel the vibe of Diljit's energetic bhangra beats and chart-topping hits."
+function extractImage(imageVal: any): string {
+  if (!imageVal) return ""
+  if (typeof imageVal === "string") {
+    return imageVal.replace("http://", "https://")
   }
-]
-
-// Fisher-Yates shuffle seeded by a number so it's stable within one session
-function seededShuffle<T>(arr: T[], seed: number): T[] {
-  const a = [...arr]
-  let s = seed
-  for (let i = a.length - 1; i > 0; i--) {
-    s = (s * 1664525 + 1013904223) & 0xffffffff
-    const j = Math.abs(s) % (i + 1)
-    ;[a[i], a[j]] = [a[j], a[i]]
+  if (Array.isArray(imageVal)) {
+    const match = imageVal[2]?.link || imageVal[imageVal.length - 1]?.link || ""
+    return match.replace("http://", "https://")
   }
-  return a
+  return ""
 }
 
-// ── LAZY ROW WRAPPER ──
-// Defers rendering of children until 600px before they enter the viewport.
-// When not mounted, React-Query hooks don't fire — zero wasted requests on load.
-function LazyRow({ children, fallback }: { children: React.ReactNode; fallback?: React.ReactNode }) {
-  const [isVisible, setIsVisible] = React.useState(false)
-  const ref = React.useRef<HTMLDivElement>(null)
-
-  React.useEffect(() => {
-    const el = ref.current
-    if (!el) return
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true)
-          observer.disconnect()
-        }
-      },
-      { rootMargin: "150px" } // Stagger pre-loading to prevent concurrent API saturation on mount
-    )
-
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
-
-  return (
-    <div ref={ref} className={isVisible ? "" : "min-h-[150px]"}>
-      {isVisible ? (
-        children
-      ) : (
-        fallback || (
-          <div className="px-4 md:px-6 mb-8 space-y-4">
-            <div className="h-6 w-48 bg-[#1a1a24] rounded animate-pulse" />
-            <div className="flex gap-4 overflow-x-hidden">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="w-[140px] sm:w-[160px] md:w-[180px] aspect-square rounded-xl bg-[#1a1a24] animate-pulse flex-shrink-0"
-                />
-              ))}
-            </div>
-          </div>
-        )
-      )}
-    </div>
-  )
-}
-
-// ── ROW PROPS ──
-interface RowProps {
-  sessionSeed: number
-  onSongSelected: (list: Song[], song: Song) => void
-}
-
-// ── SPECIALIZED LAZY ROW COMPONENTS ──
-
-function DiscoverSongsRow({
-  trendingSongs,
-  likedSongs,
-  onSongSelected
-}: {
-  trendingSongs: Song[]
-  likedSongs: LikedSongItem[]
-  onSongSelected: (list: Song[], song: Song) => void
-}) {
-  const { data: songs = [], isLoading } = useQuery<Song[]>({
-    queryKey: ["discoverSongs", likedSongs?.length, trendingSongs?.length],
-    queryFn: async () => {
-      let seedId = ""
-      if (likedSongs && likedSongs.length > 0) {
-        const randIndex = Math.floor(Math.random() * likedSongs.length)
-        seedId = likedSongs[randIndex].songId
-      } else if (trendingSongs && trendingSongs.length > 0) {
-        const randIndex = Math.floor(Math.random() * Math.min(trendingSongs.length, 5))
-        seedId = trendingSongs[randIndex].id
-      }
-
-      if (!seedId) {
-        const res = await fetch("/api/search?query=Discover&type=songs")
-        if (!res.ok) return []
-        const json = await res.json()
-        return json.songs || []
-      }
-
-      const res = await fetch(`/api/song/recommend?id=${seedId}`)
-      if (!res.ok) return []
-      const json = await res.json()
-      return json.data || []
-    },
-    enabled: trendingSongs.length > 0,
-    staleTime: 1000 * 60 * 5,
-  })
-
-  if (!isLoading && songs.length === 0) return null
-
-  return (
-    <div className="mb-8">
-      <RowSection
-        title="Discover Something New"
-        songs={songs}
-        isLoading={isLoading}
-        onSongSelected={(song) => onSongSelected(songs, song)}
-        mobileCardSize="sm"
-      />
-    </div>
-  )
-}
-
-function NewReleasesRow({ sessionSeed, onSongSelected }: RowProps) {
-  const { data: raw = [], isLoading } = useQuery<Song[]>({
-    queryKey: ["newReleases"],
-    queryFn: async () => {
-      const res = await fetch("/api/search?query=Hits&type=songs")
-      if (!res.ok) throw new Error()
-      const d = await res.json()
-      return d.songs || []
-    },
-    staleTime: 1000 * 60 * 5,
-  })
-  const songs = React.useMemo(() => seededShuffle(raw, sessionSeed + 1), [raw, sessionSeed])
-
-  return (
-    <div className="mb-8">
-      <RowSection
-        title="Fresh New Hits"
-        songs={songs}
-        isLoading={isLoading}
-        onSongSelected={(song) => onSongSelected(songs, song)}
-        mobileCardSize="lg"
-      />
-    </div>
-  )
-}
-
-function LatestHindiRow({ sessionSeed, onSongSelected }: RowProps) {
-  const { data: raw = [], isLoading } = useQuery<Song[]>({
-    queryKey: ["latestHindi"],
-    queryFn: async () => {
-      const res = await fetch("/api/search?query=Latest%20Hindi%20Songs&type=songs")
-      if (!res.ok) throw new Error()
-      const d = await res.json()
-      return d.songs || []
-    },
-    staleTime: 1000 * 60 * 5,
-  })
-  const songs = React.useMemo(() => seededShuffle(raw, sessionSeed + 2), [raw, sessionSeed])
-
-  return (
-    <div className="mb-8">
-      <RowSection
-        title="Recently Launched Hindi Songs"
-        songs={songs}
-        isLoading={isLoading}
-        onSongSelected={(song) => onSongSelected(songs, song)}
-        mobileCardSize="lg"
-      />
-    </div>
-  )
-}
-
-function HindiRomanticRow({ sessionSeed, onSongSelected }: RowProps) {
-  const { data: raw = [], isLoading } = useQuery<Song[]>({
-    queryKey: ["hindiRomantic"],
-    queryFn: async () => {
-      const res = await fetch("/api/search?query=Hindi%20Romantic&type=songs")
-      if (!res.ok) throw new Error()
-      const d = await res.json()
-      return d.songs || []
-    },
-    staleTime: 1000 * 60 * 5,
-  })
-  const songs = React.useMemo(() => seededShuffle(raw, sessionSeed + 3), [raw, sessionSeed])
-
-  return (
-    <div className="mb-8">
-      <RowSection
-        title="Hindi Romantic Hits"
-        songs={songs}
-        isLoading={isLoading}
-        onSongSelected={(song) => onSongSelected(songs, song)}
-        mobileCardSize="sm"
-      />
-    </div>
-  )
-}
-
-function PopularMixesRow() {
-  interface PopularMixItem {
-    id: string
-    name: string
-    description?: string
-    image: string
-    link: string
+function formatRawSongToPlayerSong(raw: any): Song {
+  let streamUrl = ""
+  const urls = raw.download_url || raw.downloadUrl || []
+  if (urls.length > 0) {
+    streamUrl = (urls[4]?.link || urls[urls.length - 1]?.link || "").replace("http://", "https://")
   }
-
-  const { data: popularMixes = [], isLoading } = useQuery<PopularMixItem[]>({
-    queryKey: ["popularMixes"],
-    queryFn: async (): Promise<PopularMixItem[]> => {
-      const res = await fetch("/api/mix")
-      if (!res.ok) return []
-      const json = await res.json()
-      return json.data || []
-    },
-    staleTime: 1000 * 60 * 60 * 24, // 24h — static data
-  })
-
-  const formattedMixes = React.useMemo(() => popularMixes.map((mix) => ({
-    id: mix.id,
-    name: mix.name,
-    artist: mix.description || "Curated Playlist",
-    image: mix.image,
-    link: mix.link,
-  })), [popularMixes])
-
-  if (!isLoading && formattedMixes.length === 0) return null
-
-  return (
-    <div className="mb-8">
-      <RowAlbums
-        title="Popular Mixes"
-        albums={formattedMixes}
-        isLoading={isLoading}
-        mobileCardSize="lg"
-      />
-    </div>
-  )
-}
-
-function ArijitSinghRow({ sessionSeed, onSongSelected }: RowProps) {
-  const { data: raw = [], isLoading } = useQuery<Song[]>({
-    queryKey: ["arijitSingh"],
-    queryFn: async () => {
-      const res = await fetch("/api/search?query=Arijit%20Singh%20Hits&type=songs")
-      if (!res.ok) throw new Error()
-      const d = await res.json()
-      return d.songs || []
-    },
-    staleTime: 1000 * 60 * 5,
-  })
-  const songs = React.useMemo(() => seededShuffle(raw, sessionSeed + 4), [raw, sessionSeed])
-
-  return (
-    <div className="mb-8">
-      <RowSection
-        title="Arijit Singh Collections"
-        songs={songs}
-        isLoading={isLoading}
-        onSongSelected={(song) => onSongSelected(songs, song)}
-        mobileCardSize="md"
-      />
-    </div>
-  )
-}
-
-function LofiHindiRow({ sessionSeed, onSongSelected }: RowProps) {
-  const { data: raw = [], isLoading } = useQuery<Song[]>({
-    queryKey: ["lofiHindi"],
-    queryFn: async () => {
-      const res = await fetch("/api/search?query=Lofi%20Hindi&type=songs")
-      if (!res.ok) throw new Error()
-      const d = await res.json()
-      return d.songs || []
-    },
-    staleTime: 1000 * 60 * 5,
-  })
-  const songs = React.useMemo(() => seededShuffle(raw, sessionSeed + 5), [raw, sessionSeed])
-
-  return (
-    <div className="mb-8">
-      <RowSection
-        title="Bollywood Lofi and Chill"
-        songs={songs}
-        isLoading={isLoading}
-        onSongSelected={(song) => onSongSelected(songs, song)}
-        mobileCardSize="sm"
-      />
-    </div>
-  )
-}
-
-function RetroHindiRow({ sessionSeed, onSongSelected }: RowProps) {
-  const { data: raw = [], isLoading } = useQuery<Song[]>({
-    queryKey: ["retroHindi"],
-    queryFn: async () => {
-      const res = await fetch("/api/search?query=Hindi%20Retro%20Classics&type=songs")
-      if (!res.ok) throw new Error()
-      const d = await res.json()
-      return d.songs || []
-    },
-    staleTime: 1000 * 60 * 5,
-  })
-  const songs = React.useMemo(() => seededShuffle(raw, sessionSeed + 6), [raw, sessionSeed])
-
-  return (
-    <div className="mb-8">
-      <RowSection
-        title="Bollywood Retro Classics"
-        songs={songs}
-        isLoading={isLoading}
-        onSongSelected={(song) => onSongSelected(songs, song)}
-        mobileCardSize="lg"
-      />
-    </div>
-  )
-}
-
-function RecentlyPlayedRow({ session, onSongSelected }: { session: any; onSongSelected: (list: Song[], song: Song) => void }) {
-  interface RecentPlayItem {
-    songId: string
-    songName: string
-    artist: string
-    image: string
-    streamUrl: string
-    duration?: number
+  const duration = typeof raw.duration === "string" ? parseInt(raw.duration, 10) : (raw.duration || 0)
+  return {
+    id: raw.id || "",
+    name: raw.name || raw.title || "",
+    artist: raw.subtitle || (raw.artist_map?.primary_artists?.[0]?.name) || "Unknown Artist",
+    image: (raw.image || "").replace("http://", "https://"),
+    streamUrl,
+    duration: isNaN(duration) ? 0 : duration,
+    url: raw.url || raw.perma_url || raw.link || "",
   }
-
-  const { data: recentlyPlayed = [], isLoading } = useQuery<RecentPlayItem[]>({
-    queryKey: ["recentlyPlayed"],
-    queryFn: async (): Promise<RecentPlayItem[]> => {
-      const res = await fetch("/api/library/recent")
-      if (!res.ok) return []
-      return res.json()
-    },
-    refetchOnMount: "always",
-    enabled: !!session,
-  })
-
-  const formattedRecentlyPlayed: Song[] = React.useMemo(() => recentlyPlayed.map((rp) => ({
-    id: rp.songId,
-    name: rp.songName,
-    artist: rp.artist,
-    image: rp.image,
-    streamUrl: rp.streamUrl,
-    duration: rp.duration || 180,
-  })), [recentlyPlayed])
-
-  if (!session || formattedRecentlyPlayed.length === 0) return null
-
-  return (
-    <div className="mb-8">
-      <RowSection
-        title="Recently Played"
-        songs={formattedRecentlyPlayed}
-        isLoading={isLoading}
-        onSongSelected={(song) => onSongSelected(formattedRecentlyPlayed, song)}
-      />
-    </div>
-  )
 }
 
-// ── MAIN CLIENT HOMEPAGE ──
+const mapRawItem = (item: any, typeFallback: string) => {
+  return {
+    id: item.id || "",
+    name: item.name || item.title || "",
+    subtitle: item.count ? `${item.count} songs` : (item.subtitle || item.description || ""),
+    type: item.type || typeFallback,
+    image: extractImage(item.image),
+    url: item.url || item.perma_url || item.link || ""
+  }
+}
 
-export default function HomeClient({ initialTrending, initialAlbums, initialModules }: Props) {
-  const { data: session } = useSession()
+export default function HomeClient({ modules }: HomeClientProps) {
   const router = useRouter()
-  const setQueue = usePlayerStore((state) => state.setQueue)
+  const setAppReady = useAppStore((state) => state.setAppReady)
+  const [greeting, setGreeting] = React.useState("Good day")
+  const [storyArtists, setStoryArtists] = React.useState<any[]>([])
+
+  // Player Store integration
   const currentSong = usePlayerStore((state) => state.currentSong)
   const isPlaying = usePlayerStore((state) => state.isPlaying)
+  const setQueue = usePlayerStore((state) => state.setQueue)
   const play = usePlayerStore((state) => state.play)
   const pause = usePlayerStore((state) => state.pause)
-  const queryClient = useQueryClient()
+  const startRadioMode = usePlayerStore((state) => state.startRadioMode)
 
-  const handlePrefetchSearch = (query: string) => {
-    queryClient.prefetchQuery({
-      queryKey: ["search", query],
-      queryFn: async () => {
-        const res = await fetch(`/api/search?query=${encodeURIComponent(query)}`)
-        if (!res.ok) throw new Error("Search failed")
-        return res.json()
-      },
-      staleTime: 300000,
-    })
-  }
-
-  const handlePrefetchArtist = (link: string) => {
-    queryClient.prefetchQuery({
-      queryKey: ["artist", link],
-      queryFn: async () => {
-        const res = await fetch(`/api/artist?link=${encodeURIComponent(link)}`)
-        if (!res.ok) throw new Error("Failed to fetch artist")
-        return res.json()
-      },
-      staleTime: 300000,
-    })
-  }
-
-  const [greeting, setGreeting] = React.useState("Good day")
-  const [sessionSeed, setSessionSeed] = React.useState(0)
-  const [spotlightArtist, setSpotlightArtist] = React.useState(SPOTLIGHT_ARTISTS[0])
-  const [spotlightImg, setSpotlightImg] = React.useState(spotlightArtist.image)
-
-  // Magic Shuffle Interactive Widget States
-  const [shuffleState, setShuffleState] = React.useState<"idle" | "shuffling" | "success">("idle")
-  const [shuffleSong, setShuffleSong] = React.useState<Song | null>(null)
-  const [shufflingTitle, setShufflingTitle] = React.useState("Shuffling vibes...")
-  const shuffleIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null)
-  const trendingSongsRef = React.useRef<Song[]>([])
-  const shuffledHistoryRef = React.useRef<string[]>([])
-  const romanticSongsCacheRef = React.useRef<Song[]>([])
-
-  React.useEffect(() => {
-    setSpotlightImg(spotlightArtist.image)
-  }, [spotlightArtist])
-
-  const handleMagicShuffle = React.useCallback(async () => {
-    // Prevent double-trigger
-    if (shuffleIntervalRef.current !== null && shuffleState === "shuffling") return
-
-    // Clear any stale interval immediately
-    if (shuffleIntervalRef.current) {
-      clearInterval(shuffleIntervalRef.current)
-      shuffleIntervalRef.current = null
-    }
-
-    setShuffleState("shuffling")
-    setShuffleSong(null)
-
-    // Kick off title cycling animation
-    let titleIndex = 0
-    shuffleIntervalRef.current = setInterval(() => {
-      titleIndex = (titleIndex + 1) % SHUFFLING_TITLES.length
-      setShufflingTitle(SHUFFLING_TITLES[Math.floor(Math.random() * SHUFFLING_TITLES.length)])
-    }, 90)
-
-    // Wait exactly 2 seconds for a beautiful, satisfying spin
-    await new Promise<void>((resolve) => setTimeout(resolve, 2000))
-
-    // Stop interval
-    if (shuffleIntervalRef.current) {
-      clearInterval(shuffleIntervalRef.current)
-      shuffleIntervalRef.current = null
-    }
-
-    let songsList: Song[] = [...romanticSongsCacheRef.current]
-
-    // Fallback if cache is empty: search on the fly or use real trending songs (excluding SoundHelix mock ones)
-    if (songsList.length === 0) {
-      try {
-        const res = await fetch(`/api/search?query=${encodeURIComponent("hindi romantic hits arijit pritam")}&type=songs&lang=hindi`)
-        if (res.ok) {
-          const data = await res.json()
-          songsList = ((data.songs || []) as Song[]).filter((s) => !s.id.startsWith("fallback_"))
-          romanticSongsCacheRef.current = songsList
-        }
-      } catch (err) {
-        console.warn("Failed to fetch inside shuffle loop:", err)
-      }
-    }
-
-    // Ultimate fallback if still empty: trending songs excluding fallbacks
-    if (songsList.length === 0) {
-      songsList = trendingSongsRef.current.filter((s) => !s.id.startsWith("fallback_"))
-    }
-
-    if (songsList.length === 0) {
-      setShuffleState("idle")
-      return
-    }
-
-    // Filter out recently played songs to prevent repeating
-    let eligibleSongs = songsList.filter((s) => !shuffledHistoryRef.current.includes(s.id))
-    if (eligibleSongs.length === 0) {
-      // Reset history if all songs have been played to start over
-      shuffledHistoryRef.current = []
-      eligibleSongs = songsList
-    }
-
-    const chosenSong = eligibleSongs[Math.floor(Math.random() * eligibleSongs.length)]
-    
-    // Add to history (limit to last 12 songs)
-    shuffledHistoryRef.current.push(chosenSong.id)
-    if (shuffledHistoryRef.current.length > 12) {
-      shuffledHistoryRef.current.shift()
-    }
-
-    setShuffleSong(chosenSong)
-    setShuffleState("success")
-
-    // Play immediately
-    const idx = songsList.findIndex((s) => s.id === chosenSong.id)
-    setQueue(songsList, idx === -1 ? 0 : idx)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shuffleState])
-
-  const setAppReady = useAppStore((state) => state.setAppReady)
+  // Streaks & Duels state
+  const [streakDays, setStreakDays] = React.useState(1)
+  const [todayCount, setTodayCount] = React.useState(0)
+  const [topArtist, setTopArtist] = React.useState("")
+  
+  const [isDuelOpen, setIsDuelOpen] = React.useState(false)
+  const [duelsCompleted, setDuelsCompleted] = React.useState(0)
+  const [duelSongs, setDuelSongs] = React.useState<any[]>([])
+  const [isFetchingSongs, setIsFetchingSongs] = React.useState(false)
 
   React.useEffect(() => {
     const h = new Date().getHours()
     if (h < 12) setGreeting("Good morning")
     else if (h < 17) setGreeting("Good afternoon")
     else setGreeting("Good evening")
-    setSessionSeed(Math.floor(Math.random() * 999983))
-
-    // Select random Hindi spotlight artist on mount
-    const randomArtist = SPOTLIGHT_ARTISTS[Math.floor(Math.random() * SPOTLIGHT_ARTISTS.length)]
-    setSpotlightArtist(randomArtist)
-
-    // Pre-fetch Hindi romantic songs list to make shuffling instantaneous and smooth!
-    const prefetchRomanticSongs = async () => {
-      try {
-        const res = await fetch(`/api/search?query=${encodeURIComponent("hindi romantic hits arijit pritam shreya")}&type=songs&lang=hindi`)
-        if (res.ok) {
-          const data = await res.json()
-          if (data.songs && data.songs.length > 0) {
-            // Filter out any SoundHelix mock fallbacks right away
-            romanticSongsCacheRef.current = data.songs.filter((s: Song) => s.id && !s.id.startsWith("fallback_"))
-          }
-        }
-      } catch (err) {
-        console.warn("Failed to prefetch romantic songs:", err)
-      }
-    }
-    prefetchRomanticSongs()
-
-    // Server already fetched data — signal app is ready immediately
     setAppReady()
   }, [setAppReady])
 
-  // ── MODULES — client-side data fetch ──
-  const { data: modules = initialModules, isLoading: isModulesLoading } = useQuery<ModulesData | null>({
-    queryKey: ["modules"],
-    queryFn: async () => {
-      const res = await fetch("/api/modules?lang=hindi")
-      if (!res.ok) throw new Error("Failed to fetch modules")
+  // Hydrate Streaks stats and completed duels from localStorage
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const data = JSON.parse(localStorage.getItem('streak_data') || '{}')
+      setStreakDays(data.streakDays || 1)
+      setTodayCount(data.todayCount || 0)
+      
+      const artists = data.artists || {}
+      let topArt = ""
+      let maxCount = 0
+      Object.entries(artists).forEach(([artName, count]: any) => {
+        if (count > maxCount) {
+          maxCount = count
+          topArt = artName
+        }
+      })
+      setTopArtist(topArt)
+      
+      const completed = parseInt(localStorage.getItem('completed_duels') || '0', 10)
+      setDuelsCompleted(completed)
+    }
+  }, [isDuelOpen, isPlaying])
+
+  // Frequency Algorithm to compute stories row artists based on listening history
+  React.useEffect(() => {
+    const computeStories = async () => {
+      const recentArtists: Record<string, { count: number; image: string; url: string; name: string }> = {}
+      
+      try {
+        const res = await fetch("/api/library/recent")
+        if (res.ok) {
+          const recentSongs = await res.json()
+          if (Array.isArray(recentSongs) && recentSongs.length > 0) {
+            recentSongs.forEach((song: any) => {
+              const artistName = song.artist || "Unknown Artist"
+              if (!recentArtists[artistName]) {
+                recentArtists[artistName] = {
+                  count: 0,
+                  image: song.image || "",
+                  url: `https://www.jiosaavn.com/artist/${encodeURIComponent(artistName)}-songs/`,
+                  name: artistName
+                }
+              }
+              recentArtists[artistName].count += 1
+            })
+          }
+        }
+      } catch (err) {
+        console.warn("Could not calculate story algorithm from recent songs:", err)
+      }
+
+      const sortedRecents = Object.values(recentArtists).sort((a, b) => b.count - a.count)
+      const recoArtists = modules?.artist_recos?.data || []
+      const mergedList = [...sortedRecents]
+
+      recoArtists.forEach((art: any) => {
+        const mapped = mapRawItem(art, "artist")
+        if (!mergedList.some((item) => item.name.toLowerCase() === mapped.name.toLowerCase())) {
+          mergedList.push({
+            count: 0,
+            image: mapped.image,
+            url: mapped.url,
+            name: mapped.name
+          })
+        }
+      })
+
+      const defaultArtists = [
+        { count: 0, name: "Arijit Singh", url: "https://www.jiosaavn.com/artist/arijit-singh-songs/LlRWpHzy3Hk_", image: "https://c.saavncdn.com/artists/Arijit_Singh_004_20241118063717_150x150.jpg" },
+        { count: 0, name: "Shreya Ghoshal", url: "https://www.jiosaavn.com/artist/shreya-ghoshal-songs/W0j-f-38M78_", image: "https://c.saavncdn.com/artists/Shreya_Ghoshal_004_20230612135424_150x150.jpg" },
+        { count: 0, name: "Pritam", url: "https://www.jiosaavn.com/artist/pritam-songs/OaFg9HPZgq8_", image: "https://c.saavncdn.com/artists/Pritam_Chakraborty-20170711073326_150x150.jpg" },
+        { count: 0, name: "AR Rahman", url: "https://www.jiosaavn.com/artist/a.-r.-rahman-songs/v098,w,237I_", image: "https://c.saavncdn.com/artists/A_R_Rahman_003_20230612134812_150x150.jpg" },
+        { count: 0, name: "Diljit Dosanjh", url: "https://www.jiosaavn.com/artist/diljit-dosanjh-songs/2gf-04PZ5As_", image: "https://c.saavncdn.com/artists/Diljit_Dosanjh_004_20221004113110_150x150.jpg" },
+        { count: 0, name: "Anirudh", url: "https://www.jiosaavn.com/artist/anirudh-ravichander-songs/8tByt6Zc220_", image: "https://c.saavncdn.com/artists/Anirudh_Ravichander_004_20230612135118_150x150.jpg" },
+        { count: 0, name: "Neha Kakkar", url: "https://www.jiosaavn.com/artist/neha-kakkar-songs/c4-N59R-dsw_", image: "https://c.saavncdn.com/artists/Neha_Kakkar_006_20200821105342_150x150.jpg" }
+      ]
+
+      defaultArtists.forEach((art) => {
+        if (!mergedList.some((item) => item.name.toLowerCase() === art.name.toLowerCase())) {
+          mergedList.push(art)
+        }
+      })
+
+      setStoryArtists(mergedList.slice(0, 10))
+    }
+
+    computeStories()
+  }, [modules])
+
+  // Helper to dynamically resolve the artist's full Saavn URL
+  const handleArtistClick = async (artist: any) => {
+    const { name, url } = artist
+    
+    const cleaned = url ? url.replace("internal-site.jiosaavn.com/s/", "www.jiosaavn.com/") : ""
+    const hasArtistPrefix = cleaned.startsWith("https://www.jiosaavn.com/artist/")
+    
+    if (hasArtistPrefix) {
+      router.push(`/artist?link=${encodeURIComponent(cleaned)}`)
+      return
+    }
+
+    const resolveToast = toast.loading(`Resolving discography for "${name}"...`)
+    try {
+      const res = await fetch(`/api/search?query=${encodeURIComponent(name)}`)
+      if (!res.ok) throw new Error("Search query failed")
       const json = await res.json()
-      return json.data || null
-    },
-    initialData: initialModules || undefined,
-    initialDataUpdatedAt: initialModules ? Date.now() : undefined,
-    staleTime: 1000 * 60 * 5,
-  })
-
-  // ── TRENDING — seeded with server data so browser sees it instantly ──
-  const { data: trendingSongsRaw = initialTrending, isLoading: isTrendingLoading } = useQuery<Song[]>({
-    queryKey: ["trending"],
-    queryFn: async () => {
-      const res = await fetch("/api/trending")
-      if (!res.ok) throw new Error()
-      return res.json()
-    },
-    initialData: initialTrending,
-    initialDataUpdatedAt: Date.now(),
-    staleTime: 1000 * 60 * 5,
-  })
-
-  // ── TRENDING ALBUMS — seeded with server data ──
-  const { data: trendingAlbums = initialAlbums, isLoading: isAlbumsLoading } = useQuery<AlbumItem[]>({
-    queryKey: ["trendingAlbums"],
-    queryFn: async (): Promise<AlbumItem[]> => {
-      const res = await fetch("/api/trending/albums")
-      if (!res.ok) throw new Error()
-      return res.json()
-    },
-    initialData: initialAlbums,
-    initialDataUpdatedAt: Date.now(),
-    staleTime: 1000 * 60 * 5,
-  })
-
-  // ── GENRE IMAGES — static, 24h stale ──
-  const { data: genreImages = {} } = useQuery<Record<string, string>>({
-    queryKey: ["genreImages"],
-    queryFn: async () => {
-      const res = await fetch("/api/genre-images")
-      if (!res.ok) return {}
-      return res.json()
-    },
-    staleTime: 86400000,
-  })
-
-  // ── LIKED SONGS — for discover seeding ──
-  const { data: likedSongs = [] } = useQuery<LikedSongItem[]>({
-    queryKey: ["likedSongs"],
-    queryFn: async (): Promise<LikedSongItem[]> => {
-      const res = await fetch("/api/library/likes")
-      if (!res.ok) return []
-      return res.json()
-    },
-    enabled: !!session,
-  })
-
-  const handleSongPlay = (list: Song[], song: Song) => {
-    const idx = list.findIndex((s) => s.id === song.id)
-    setQueue(list, idx === -1 ? 0 : idx)
+      
+      const matchedArtist = json?.artists?.[0]
+      const resolvedLink = matchedArtist?.link || matchedArtist?.url
+      
+      if (resolvedLink) {
+        toast.dismiss(resolveToast)
+        router.push(`/artist?link=${encodeURIComponent(resolvedLink)}`)
+      } else {
+        throw new Error("No artist matched")
+      }
+    } catch (err) {
+      toast.dismiss(resolveToast)
+      console.warn(`Could not resolve artist link for ${name}:`, err)
+      router.push(`/search?query=${encodeURIComponent(name)}`)
+    }
   }
 
-  // Daily seed so quick picks change each day but are stable within the day
-  const dailySeed = React.useMemo(() => {
-    const d = new Date()
-    return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate()
-  }, [])
-
-  const trendingSongs = React.useMemo(() => {
-    let list = seededShuffle(trendingSongsRaw, sessionSeed)
-    if (list.length < 6) {
-      const existingIds = new Set(list.map((s) => s.id))
-      for (const fallback of FALLBACK_TRENDING_SONGS) {
-        if (!existingIds.has(fallback.id)) {
-          list.push(fallback)
+  const handleSongPlay = async (songItem: any) => {
+    const song = formatRawSongToPlayerSong(songItem)
+    const isCurrent = currentSong?.id === song.id
+    
+    if (isCurrent) {
+      if (isPlaying) pause()
+      else play()
+    } else {
+      if (!song.streamUrl && song.url) {
+        const resolveToast = toast.loading("Resolving song audio stream...")
+        try {
+          const res = await fetch(`/api/song?link=${encodeURIComponent(song.url)}`)
+          if (!res.ok) throw new Error()
+          const detailedSong = await res.json()
+          toast.dismiss(resolveToast)
+          setQueue([detailedSong], 0)
+        } catch {
+          toast.dismiss(resolveToast)
+          toast.error("Could not stream this song.")
         }
-        if (list.length >= 6) break
+      } else {
+        setQueue([song], 0)
       }
     }
-    return list
-  }, [trendingSongsRaw, sessionSeed])
+  }
 
-  // Keep trendingSongsRef in sync — must be after trendingSongs is declared
-  React.useEffect(() => { trendingSongsRef.current = trendingSongs }, [trendingSongs])
+  const handleGenericClick = async (item: any) => {
+    const { id, name, type, url } = item
+    
+    if (type === "song") {
+      await handleSongPlay(item)
+    } else if (type === "album") {
+      router.push(`/album?link=${encodeURIComponent(url)}`)
+    } else if (type === "playlist") {
+      router.push(`/jiosaavn-playlist?id=${id}`)
+    } else if (type === "artist") {
+      await handleArtistClick(item)
+    } else if (type === "channel") {
+      router.push(`/search?query=${encodeURIComponent(name)}`)
+    } else if (type === "show") {
+      router.push(`/jiosaavn-playlist?id=${id}`)
+    }
+  }
 
-  // Quick picks use daily seed so they stay fixed for the day but change day-to-day
-  const quickPicks = React.useMemo(() => {
-    return seededShuffle(trendingSongs, dailySeed).slice(0, 6)
-  }, [trendingSongs, dailySeed])
+  // Pure Algorithmic Song Duel fetches
+  const getDuelSongs = async () => {
+    const streakData = JSON.parse(localStorage.getItem('streak_data') || '{}')
+    const artists = streakData.artists || {}
+    const artistKeys = Object.keys(artists)
+    
+    let query = ''
+    
+    if (artistKeys.length >= 2) {
+      // Pick a random artist from played history
+      const randomArtist = artistKeys[Math.floor(Math.random() * artistKeys.length)]
+      query = randomArtist
+    } else {
+      // Fallback: fetch Hindi trending hits
+      const trendingRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/get/trending?type=song&lang=hindi`)
+      const trendingData = await trendingRes.json()
+      const trendingSongs = trendingData?.data || []
+      
+      const formatted = trendingSongs.map((s: any) => ({
+        id: s.id,
+        name: s.name || s.title || "",
+        artist: s.subtitle || (s.artist_map?.primary_artists?.[0]?.name) || "Unknown Artist",
+        image: extractImage(s.image),
+        streamUrl: (s.download_url?.[4]?.link || s.download_url?.[s.download_url.length - 1]?.link || "").replace("http://", "https://"),
+        duration: typeof s.duration === "string" ? parseInt(s.duration, 10) : (s.duration || 0)
+      }))
+      
+      const shuffled = formatted.sort(() => Math.random() - 0.5)
+      return [shuffled[0], shuffled[1]]
+    }
+    
+    const res = await fetch(`/api/search?query=${encodeURIComponent(query)}`)
+    const data = await res.json()
+    const searchData = data?.songs || data?.data || data || []
+    
+    const formatted = searchData.filter((s: any) => s.streamUrl || s.download_url).map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      artist: s.artist || query,
+      image: s.image || "",
+      streamUrl: s.streamUrl || "",
+      duration: s.duration || 0
+    }))
+
+    if (formatted.length < 2) {
+      const trendingRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/get/trending?type=song&lang=hindi`)
+      const trendingData = await trendingRes.json()
+      const trendingSongs = trendingData?.data || []
+      
+      const tFormatted = trendingSongs.map((s: any) => ({
+        id: s.id,
+        name: s.name || s.title || "",
+        artist: s.subtitle || (s.artist_map?.primary_artists?.[0]?.name) || "Unknown Artist",
+        image: extractImage(s.image),
+        streamUrl: (s.download_url?.[4]?.link || s.download_url?.[s.download_url.length - 1]?.link || "").replace("http://", "https://"),
+        duration: typeof s.duration === "string" ? parseInt(s.duration, 10) : (s.duration || 0)
+      }))
+      const shuffled = tFormatted.sort(() => Math.random() - 0.5)
+      return [shuffled[0], shuffled[1]]
+    }
+    
+    const shuffled = formatted.sort(() => Math.random() - 0.5)
+    return [shuffled[0], shuffled[1]]
+  }
+
+  const startDuel = async () => {
+    setIsDuelOpen(true)
+    setIsFetchingSongs(true)
+    try {
+      const songs = await getDuelSongs()
+      setDuelSongs(songs)
+    } catch (err) {
+      toast.error("Could not fetch duel songs.")
+    } finally {
+      setIsFetchingSongs(false)
+    }
+  }
+
+  const handleVote = (winner: any) => {
+    const winnerToPlay: Song = {
+      id: winner.id,
+      name: winner.name,
+      artist: winner.artist,
+      image: winner.image,
+      streamUrl: winner.streamUrl,
+      duration: winner.duration,
+    }
+    play(winnerToPlay)
+    
+    const prefs = JSON.parse(localStorage.getItem('duel_prefs') || '{}')
+    prefs[winner.id] = (prefs[winner.id] || 0) + 1
+    localStorage.setItem('duel_prefs', JSON.stringify(prefs))
+    
+    const nextCompleted = duelsCompleted + 1
+    setDuelsCompleted(nextCompleted)
+    localStorage.setItem('completed_duels', String(nextCompleted))
+    
+    toast.success(`Voted for "${winner.name}"! Playing now...`)
+    
+    loadNextDuel()
+  }
+
+  const loadNextDuel = async () => {
+    setIsFetchingSongs(true)
+    try {
+      const songs = await getDuelSongs()
+      setDuelSongs(songs)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsFetchingSongs(false)
+    }
+  }
+
+  const playYourMix = async () => {
+    const resolveToast = toast.loading("Assembling your custom duel mix...")
+    try {
+      const prefs = JSON.parse(localStorage.getItem('duel_prefs') || '{}')
+      const streakData = JSON.parse(localStorage.getItem('streak_data') || '{}')
+      
+      const artists = Object.keys(streakData.artists || {})
+      let queryArtist = ""
+      if (artists.length > 0) {
+        queryArtist = artists[Math.floor(Math.random() * artists.length)]
+      } else {
+        queryArtist = "Arijit Singh"
+      }
+      
+      const res = await fetch(`/api/search?query=${encodeURIComponent(queryArtist)}`)
+      if (!res.ok) throw new Error()
+      const json = await res.json()
+      
+      const searchSongs = json?.songs || json?.data || []
+      if (searchSongs.length === 0) throw new Error()
+      
+      const mixSongs = searchSongs.slice(0, 10).map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        artist: s.artist || queryArtist,
+        image: s.image || "",
+        streamUrl: s.streamUrl || "",
+        duration: s.duration || 0,
+      }))
+      
+      toast.dismiss(resolveToast)
+      setQueue(mixSongs, 0)
+      toast.success("Vibe check complete! Playing Your Mix queue.")
+      setIsDuelOpen(false)
+    } catch {
+      toast.dismiss(resolveToast)
+      toast.error("Could not compile Your Mix. Try another duel!")
+    }
+  }
+
+  if (!modules) {
+    return <HomeSkeleton />
+  }
+
+  // Ordered sections with Radio Stations replaced
+  const orderedSections = [
+    { key: "trending", dataKey: "trending", fallbackTitle: "Trending Now", typeFallback: "song", seeAllHref: "/search?query=Trending" },
+    { key: "charts", dataKey: "charts", fallbackTitle: "Top Charts", typeFallback: "playlist", seeAllHref: "/charts" },
+    { key: "albums", dataKey: "albums", fallbackTitle: "New Releases", typeFallback: "album", seeAllHref: "/search?query=New Releases&type=albums" },
+    { key: "playlists", dataKey: "playlists", fallbackTitle: "Editorial Picks", typeFallback: "playlist", seeAllHref: "/playlists" },
+    { key: "promo0", dataKey: "promo0", fallbackTitle: "Fresh Hits", typeFallback: "playlist", seeAllHref: "/search?query=Fresh Hits" },
+    { key: "promo3", dataKey: "promo3", fallbackTitle: "Trending Podcasts", typeFallback: "show", seeAllHref: "/search?query=Podcasts" },
+    { key: "promo1", dataKey: "promo1", fallbackTitle: "Top Genres & Moods", typeFallback: "playlist", seeAllHref: "/search?query=Genres" },
+    { key: "promo2", dataKey: "promo2", fallbackTitle: "Best Of 90s", typeFallback: "playlist", seeAllHref: "/search?query=90s Nostalgia" },
+    { key: "artist_recos", dataKey: "artist_recos", fallbackTitle: "Recommended Artists", typeFallback: "artist", seeAllHref: "/search?query=Artists" },
+    { key: "discover", dataKey: "discover", fallbackTitle: "Moods & Genres", typeFallback: "channel", seeAllHref: "/search" },
+    { key: "city_mod", dataKey: "city_mod", fallbackTitle: "What's Hot", typeFallback: "artist", seeAllHref: "/search?query=What's Hot" }
+  ]
 
   return (
-    <div className="min-h-full pb-36 md:pb-12">
-      {/* ── GREETING HEADER ── */}
-      <div className="px-4 md:px-6 pt-6 md:pt-8 pb-2 md:pb-6">
-        <h1 className="text-xl md:text-3xl font-black text-white">{greeting}</h1>
-        <p className="md:hidden text-sm text-[#B3B3B3] mt-1">What do you want to listen to?</p>
+    <div className="min-h-full pb-36 md:pb-16 bg-[#080810] space-y-8 md:space-y-10">
+      {/* Premium Ambient Welcome Header */}
+      <div className="px-4 md:px-6 pt-6 md:pt-8 pb-2">
+        <h1 className="text-2xl md:text-4xl font-extrabold text-white tracking-tight bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
+          {greeting}
+        </h1>
       </div>
 
-      {/* ── DESKTOP ONLY: Quick Picks 6-card grid (daily rotation) ── */}
-      {(isTrendingLoading || quickPicks.length > 0) && (
-        <div className="hidden md:block px-4 md:px-6 mb-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
-            {isTrendingLoading
-              ? Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 bg-[#1a1a24] rounded-xl h-16 shimmer animate-pulse" />
-                ))
-              : quickPicks.map((song) => {
-                  const isCurrent = currentSong?.id === song.id
-                  return (
-                    <div
-                      key={song.id}
-                      onClick={() => {
-                        if (isCurrent) { if (isPlaying) pause(); else play() }
-                        else handleSongPlay(quickPicks, song)
-                      }}
-                      className={`flex items-center gap-3 rounded-xl cursor-pointer group transition-all overflow-hidden ${
-                        isCurrent ? "bg-[#6C63FF22] border border-[#6C63FF44]" : "bg-[#1a1a24] hover:bg-[#282828]"
-                      }`}
-                    >
-                      <Image
-                        src={song.image || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=64&h=64&auto=format&fit=crop"}
-                        alt={song.name}
-                        width={64}
-                        height={64}
-                        className="w-16 h-16 object-cover flex-shrink-0 rounded-l-xl"
-                        loading="lazy"
-                      />
-                      <div className="flex-1 min-w-0 py-2">
-                        <p className={`text-sm font-bold truncate ${isCurrent ? "text-[#6C63FF]" : "text-white"}`}>{song.name}</p>
-                        <p className="text-xs text-[#B3B3B3] truncate mt-0.5">{song.artist}</p>
-                      </div>
-                      <div className={`w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-full mr-3 transition-all ${
-                        isCurrent ? "bg-[#6C63FF] opacity-100" : "bg-[#6C63FF] opacity-0 group-hover:opacity-100"
-                      } shadow-lg`}>
-                        {isCurrent && isPlaying
-                          ? <Pause size={15} className="fill-white text-white" />
-                          : <Play size={15} className="fill-white text-white ml-0.5" />
-                        }
-                      </div>
-                    </div>
-                  )
-                })
-            }
-          </div>
-        </div>
-      )}
-
-      {/* ── MOBILE ONLY: Magic Shuffle premium card ── */}
-      <div className="md:hidden px-4 mt-8 mb-8 select-none">
-        {/* Card Container with glassmorphism and subtle neon glow effects */}
-        <div
-          className="relative overflow-hidden rounded-2xl cursor-pointer transition-all duration-300 active:scale-[0.98] shadow-2xl"
-          style={{
-            background: "linear-gradient(135deg, rgba(24, 23, 44, 0.45) 0%, rgba(13, 12, 24, 0.75) 100%)",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            border: "1px solid rgba(255, 255, 255, 0.11)",
-            boxShadow: "0 12px 40px -10px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.09)",
-          }}
-          onClick={shuffleState !== "shuffling" ? handleMagicShuffle : undefined}
+      {/* ── MINIMAL ARTIST STORIES (Visible on Mobile & Desktop) ── */}
+      <div className="px-4 md:px-6 select-none">
+        <div 
+          className="flex gap-4 md:gap-6 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden" 
+          style={{ WebkitOverflowScrolling: "touch" }}
         >
-          {/* Ambient Glows */}
-          <div className="absolute top-[-30%] right-[-10%] w-40 h-40 rounded-full bg-[#6C63FF]/15 blur-[35px] pointer-events-none" />
-          <div className="absolute bottom-[-30%] left-[-15%] w-32 h-32 rounded-full bg-[#8B5CF6]/10 blur-[25px] pointer-events-none" />
-
-          {/* Blurred album art backdrop on success */}
-          {shuffleState === "success" && shuffleSong?.image && (
-            <div
-              className="absolute inset-0 opacity-[0.16] pointer-events-none transition-opacity duration-500"
-              style={{
-                backgroundImage: `url(${shuffleSong.image})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                filter: "blur(32px)",
-                transform: "scale(1.2)",
-              }}
-            />
-          )}
-
-          {/* Top accent glow line */}
-          <div
-            className="absolute top-0 left-0 right-0 h-[1.5px] opacity-80"
-            style={{
-              background: shuffleState === "success"
-                ? "linear-gradient(90deg, transparent 0%, rgba(29, 185, 84, 0.8) 50%, transparent 100%)"
-                : "linear-gradient(90deg, transparent 0%, rgba(108, 99, 255, 0.6) 50%, transparent 100%)",
-            }}
-          />
-
-          <div className="relative flex items-center gap-[18px] p-5 z-10">
-            {/* Artwork / state box (Squircle style with premium shadow) */}
-            <div
-              className="relative flex-shrink-0 w-[68px] h-[68px] rounded-xl overflow-hidden"
-              style={{
-                boxShadow: "0 8px 24px rgba(0, 0, 0, 0.65)",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-              }}
-            >
-              {shuffleState === "idle" && (
-                <div
-                  className="w-full h-full flex items-center justify-center"
-                  style={{
-                    background: "linear-gradient(135deg, #2b2654 0%, #15132d 100%)",
-                  }}
-                >
-                  <Shuffle size={24} strokeWidth={2} className="text-[#a59bf5] drop-shadow-[0_2px_8px_rgba(108,99,255,0.4)]" />
+          {storyArtists.map((artist, idx) => {
+            const firstName = artist.name.split(" ")[0] || artist.name
+            return (
+              <div
+                key={artist.name || idx}
+                onClick={() => handleArtistClick(artist)}
+                className="flex flex-col items-center flex-shrink-0 cursor-pointer active:scale-95 hover:scale-105 transition-transform duration-150"
+              >
+                {/* Clean Circular Avatar - No Glow, No Gradient Ring */}
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-full border border-white/10 overflow-hidden bg-[#282828] shadow-md flex items-center justify-center">
+                  <img
+                    src={artist.image || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=120&h=120&auto=format&fit=crop"}
+                    alt={artist.name}
+                    className="w-full h-full object-cover rounded-full"
+                  />
                 </div>
-              )}
-              {shuffleState === "shuffling" && (
-                <div
-                  className="w-full h-full flex items-center justify-center relative overflow-hidden"
-                  style={{
-                    background: "linear-gradient(135deg, #1b1932 0%, #0d0c18 100%)",
-                  }}
-                >
-                  {/* Outer spinning ring decoration */}
-                  <div className="absolute inset-1.5 rounded-full border border-dashed border-white/10 animate-[spin_10s_linear_infinite]" />
-                  <div className="w-8 h-8 rounded-full border-[2.5px] border-white/5 border-t-[#6C63FF] animate-spin" />
-                </div>
-              )}
-              {shuffleState === "success" && shuffleSong && (
-                <Image
-                  src={shuffleSong.image || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=120&h=120&auto=format&fit=crop"}
-                  alt={shuffleSong.name}
-                  fill
-                  sizes="68px"
-                  className="object-cover"
-                />
-              )}
-            </div>
-
-            {/* Text content with beautiful line height & details */}
-            <div className="flex-1 min-w-0">
-              {shuffleState === "idle" && (
-                <div className="flex flex-col">
-                  <div className="flex items-center mb-1.5">
-                    <p className="text-[9px] font-extrabold text-[#A78BFA] uppercase tracking-[0.18em]">Magic Discovery</p>
-                  </div>
-                  <h3 className="text-[17px] font-black text-white leading-tight tracking-tight">Surprise Me</h3>
-                  <p className="text-[12px] text-white/50 font-medium mt-1">Tap to spin your personal mix</p>
-                </div>
-              )}
-              {shuffleState === "shuffling" && (
-                <div className="flex flex-col">
-                  <div className="flex items-center mb-1.5">
-                    <p className="text-[9px] font-extrabold text-[#EC4899] uppercase tracking-[0.18em]">Spinning Tracks</p>
-                  </div>
-                  <h3 className="text-[15px] font-bold text-white/90 truncate leading-tight tracking-tight">{shufflingTitle}</h3>
-                  <div className="flex items-end gap-[3px] mt-2.5 h-3">
-                    {[3, 5, 4, 6, 3, 5, 4].map((h, i) => (
-                      <div
-                        key={i}
-                        className="w-[3px] rounded-full bg-[#6C63FF]"
-                        style={{
-                          height: `${h * 2}px`,
-                          opacity: 0.85,
-                          animation: `pulse ${0.4 + i * 0.08}s ease-in-out infinite alternate`,
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-              {shuffleState === "success" && shuffleSong && (
-                <div className="flex flex-col">
-                  <div className="flex items-center mb-1.5">
-                    <p className="text-[9px] font-extrabold text-[#1DB954] uppercase tracking-[0.18em]">Now Playing</p>
-                  </div>
-                  <h3 className="text-[17px] font-black text-white truncate leading-tight tracking-tight">{shuffleSong.name}</h3>
-                  <p className="text-[12px] text-[#A3A3A3] truncate mt-1 font-semibold">{shuffleSong.artist}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Action button */}
-            <button
-              onClick={(e) => { e.stopPropagation(); if (shuffleState !== "shuffling") handleMagicShuffle() }}
-              disabled={shuffleState === "shuffling"}
-              className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 active:scale-90 shadow-lg"
-              style={{
-                background: shuffleState === "shuffling"
-                  ? "rgba(255,255,255,0.04)"
-                  : shuffleState === "success"
-                    ? "#1DB954"
-                    : "#6C63FF",
-                border: shuffleState === "shuffling"
-                  ? "1px solid rgba(255,255,255,0.05)"
-                  : "none",
-                boxShadow: shuffleState === "shuffling"
-                  ? "none"
-                  : shuffleState === "success"
-                    ? "0 6px 20px rgba(29, 185, 84, 0.4)"
-                    : "0 6px 20px rgba(108, 99, 255, 0.4)",
-              }}
-            >
-              {shuffleState === "shuffling" ? (
-                <Loader2 size={18} strokeWidth={2.5} className="animate-spin text-white/35" />
-              ) : (
-                <Shuffle size={18} strokeWidth={2.5} className="text-white" />
-              )}
-            </button>
-          </div>
+                <span className="text-[10px] md:text-xs text-gray-300 font-medium mt-2 w-16 md:w-20 truncate text-center leading-none">
+                  {firstName}
+                </span>
+              </div>
+            )
+          })}
         </div>
       </div>
 
-
-      {/* ── TRENDING SECTION ── */}
-      <div className="mb-8">
-        <RowSection
-          title="Trending Now"
-          songs={trendingSongs}
-          isLoading={isTrendingLoading}
-          onSongSelected={(song) => handleSongPlay(trendingSongs, song)}
-          mobileCardSize="md"
-        />
-      </div>
-
-      {/* ── MOOD MIXES ── */}
-      <div className="mb-8">
-        <div className="px-4 md:px-6 mb-3 flex items-center justify-between">
-          <h2 className="text-lg md:text-xl font-black text-white">Mood & Vibes</h2>
-        </div>
-        <div className="flex gap-2.5 overflow-x-auto pb-1 px-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          {MOOD_MIXES.map((mix) => (
-            <button
-              key={mix.key}
-              onClick={() => {
-                handlePrefetchSearch(mix.query)
-                router.push(`/search?q=${encodeURIComponent(mix.query)}`)
-              }}
-              className={`flex-shrink-0 px-4 py-2.5 rounded-2xl text-sm font-bold text-white bg-gradient-to-r ${mix.gradient} whitespace-nowrap transition-all active:scale-95 hover:opacity-90 shadow-md`}
-            >
-              {mix.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── DYNAMIC DISCOVER (Lazy) ── */}
-      <LazyRow>
-        <DiscoverSongsRow
-          trendingSongs={trendingSongs}
-          likedSongs={likedSongs}
-          onSongSelected={handleSongPlay}
-        />
-      </LazyRow>
-
-      {/* ── RECENTLY LAUNCHED HINDI (Lazy) ── */}
-      <LazyRow>
-        <LatestHindiRow sessionSeed={sessionSeed} onSongSelected={handleSongPlay} />
-      </LazyRow>
-
-      {/* ── HINDI ROMANTIC HITS (Lazy) ── */}
-      <LazyRow>
-        <HindiRomanticRow sessionSeed={sessionSeed} onSongSelected={handleSongPlay} />
-      </LazyRow>
-
-      {/* ── POPULAR MIXES (Lazy) ── */}
-      <LazyRow>
-        <PopularMixesRow />
-      </LazyRow>
-
-      {/* ── ARIJIT SINGH HITS (Lazy) ── */}
-      <LazyRow>
-        <ArijitSinghRow sessionSeed={sessionSeed} onSongSelected={handleSongPlay} />
-      </LazyRow>
-
-      {/* ── FEATURED PLAYLISTS (from /modules) ── */}
-      {(isModulesLoading || (modules?.featured_playlists && modules.featured_playlists.length > 0)) && (
-        <LazyRow>
-          <div className="mb-8">
-            <div className="px-4 md:px-6 mb-3 flex items-center justify-between">
-              <h2 className="text-lg md:text-xl font-black text-white flex items-center gap-2">
-                <ListMusic size={18} className="text-[#6C63FF]" />
-                Featured Playlists
-              </h2>
-              <Link href="/playlists" className="text-xs font-bold text-[#B3B3B3] hover:text-white uppercase tracking-widest transition-colors flex items-center gap-1">
-                See all <ArrowRight size={14} />
-              </Link>
-            </div>
-            <RowAlbums
-              title=""
-              albums={modules?.featured_playlists?.map(p => ({ id: p.id, name: p.name, artist: `${p.songCount || ''} songs`, image: p.image, link: `/jiosaavn-playlist?id=${p.id}` })) || []}
-              isLoading={isModulesLoading}
-              linkPrefix=""
-              mobileCardSize="sm"
-            />
-          </div>
-        </LazyRow>
-      )}
-
-      {/* ── TOP CHARTS PREVIEW (from /modules) ── */}
-      {(isModulesLoading || (modules?.charts && modules.charts.length > 0)) && (
-        <LazyRow>
-          <div className="mb-8 px-4 md:px-6">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg md:text-xl font-black text-white flex items-center gap-2">
-                <BarChart2 size={18} className="text-[#FF6584]" />
-                Top Charts
-              </h2>
-              <Link href="/charts" className="text-xs font-bold text-[#B3B3B3] hover:text-white uppercase tracking-widest transition-colors flex items-center gap-1">
-                See all <ArrowRight size={14} />
-              </Link>
-            </div>
-            {isModulesLoading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="h-[52px] bg-[#1a1a24] animate-pulse rounded-xl" />
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {modules?.charts?.slice(0, 6).map((chart, i) => (
-                  <Link
-                    key={chart.id}
-                    href="/charts"
-                    className="flex items-center gap-2 bg-[#1a1a24] hover:bg-[#282828] rounded-xl p-2.5 transition-all group"
-                  >
-                    <span className="text-xs font-black text-[#727272] w-5 flex-shrink-0 text-center">{i + 1}</span>
-                    <div className="w-8 h-8 rounded-md overflow-hidden flex-shrink-0">
-                      {chart.image ? <Image src={chart.image} alt={chart.name} width={32} height={32} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-[#282828]" />}
-                    </div>
-                    <p className="text-xs font-semibold text-white truncate group-hover:text-[#6C63FF] transition-colors">{chart.name}</p>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        </LazyRow>
-      )}
-
-      {/* ── NEW RELEASES (from /modules) ── */}
-      {(isModulesLoading || (modules?.new_trending && modules.new_trending.length > 0)) && (
-        <LazyRow>
-          <div className="mb-8">
-            <RowSection
-              title="New Releases"
-              songs={modules?.new_trending || []}
-              isLoading={isModulesLoading}
-              onSongSelected={(song) => handleSongPlay(modules?.new_trending || [], song)}
-              mobileCardSize="sm"
-            />
-          </div>
-        </LazyRow>
-      )}
-
-      {/* ── TRENDING ALBUMS (modules or fallback) ── */}
-      {(() => {
-        const albumsData = modules?.albums?.length ? modules.albums : trendingAlbums
-        const isLoading = isModulesLoading ? true : (!modules?.albums?.length && isAlbumsLoading)
-        return (albumsData.length > 0 || isLoading) ? (
-          <div className="mb-8">
-            <RowAlbums title="Popular Albums" albums={albumsData.map(a => ({ id: a.id, name: a.name, artist: a.artist || "Various Artists", image: a.image, link: a.link }))} isLoading={isLoading} mobileCardSize="md" />
-          </div>
-        ) : null
-      })()}
-
-      {/* ── POPULAR ARTISTS (from /modules) ── */}
-      {(isModulesLoading || (modules?.artist_recos && modules.artist_recos.length > 0)) && (
-        <LazyRow>
-          <div className="mb-8">
-            <div className="px-4 md:px-6 mb-3 flex items-center justify-between">
-              <h2 className="text-lg md:text-xl font-black text-white flex items-center gap-2">
-                <User size={18} className="text-[#6C63FF]" />
-                Popular Artists
-              </h2>
-            </div>
-            {isModulesLoading ? (
-              <div className="flex gap-4 overflow-x-hidden px-4">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="flex-shrink-0 w-[88px] text-center space-y-2">
-                    <div className="w-[72px] h-[72px] rounded-full bg-[#1a1a24] animate-pulse mx-auto" />
-                    <div className="h-3 bg-[#1a1a24] animate-pulse rounded w-14 mx-auto" />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex gap-4 overflow-x-auto pb-2 snap-x px-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                {modules?.artist_recos?.map((artist) => (
-                  <Link
-                    key={artist.id}
-                    href={`/artist?link=${encodeURIComponent(artist.link)}`}
-                    className="flex-shrink-0 w-[88px] text-center group snap-start block font-normal scroll-ml-4"
-                  >
-                    <div className="w-[72px] h-[72px] rounded-full overflow-hidden mx-auto bg-[#1a1a24] border border-white/5 mb-2 group-hover:border-[#6C63FF66] transition-all group-hover:scale-105 duration-300 relative shadow-lg">
-                      {artist.image ? (
-                        <Image src={artist.image} alt={artist.name} width={72} height={72} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center"><User size={26} className="text-[#727272]" /></div>
-                      )}
-                    </div>
-                    <p className="text-[11px] font-semibold text-white truncate group-hover:text-[#6C63FF] transition-colors px-1">{artist.name}</p>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        </LazyRow>
-      )}
-
-      {/* ── BOLLYWOOD LOFI & CHILL (Lazy) ── */}
-      <LazyRow>
-        <LofiHindiRow sessionSeed={sessionSeed} onSongSelected={handleSongPlay} />
-      </LazyRow>
-
-      {/* ── NEW HITS (Lazy) ── */}
-      <LazyRow>
-        <NewReleasesRow sessionSeed={sessionSeed} onSongSelected={handleSongPlay} />
-      </LazyRow>
-
-      {/* ── RETRO BOLLYWOOD CLASSICS (Lazy) ── */}
-      <LazyRow>
-        <RetroHindiRow sessionSeed={sessionSeed} onSongSelected={handleSongPlay} />
-      </LazyRow>
-
-      {/* ── RECENTLY PLAYED (Lazy) ── */}
-      <LazyRow>
-        <RecentlyPlayedRow session={session} onSongSelected={handleSongPlay} />
-      </LazyRow>
-
-      {/* ── ARTIST SPOTLIGHT BANNER ── */}
-      <div className="px-4 sm:px-6 mb-8">
-        <Link
-          href={`/artist?link=${encodeURIComponent(spotlightArtist.link)}`}
-          onMouseEnter={() => handlePrefetchArtist(spotlightArtist.link)}
-          className="relative overflow-hidden rounded-2xl cursor-pointer group block text-left font-normal"
-          style={{
-            background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
-            border: "1px solid rgba(255,255,255,0.06)"
-          }}
+      {/* ── ENGAGEMENT HUB: SONG DUEL & LISTENING STREAK (Mobile & Desktop) ── */}
+      <div className="px-4 md:px-6 grid grid-cols-1 md:grid-cols-2 gap-4 select-none">
+        {/* Song Duel Card */}
+        <div 
+          onClick={startDuel}
+          className="bg-gradient-to-br from-[#6C63FF]/15 via-[#FF6584]/5 to-[#181824] border border-[#6C63FF]/20 p-5 md:p-6 rounded-2xl cursor-pointer hover:border-[#6C63FF]/40 hover:shadow-[0_0_20px_rgba(108,99,255,0.15)] transition-all duration-300 relative overflow-hidden group flex flex-col justify-between aspect-[2.8/1] md:aspect-[3.2/1] text-left"
         >
-          {/* Background art blur */}
-          <div
-            className="absolute inset-0 opacity-20 group-hover:opacity-30 transition-opacity duration-500 bg-cover bg-center blur-2xl scale-110"
-            style={{ backgroundImage: `url(${spotlightImg})` }}
-          />
-          <div className="relative flex flex-col sm:flex-row items-center gap-4 sm:gap-6 p-4 sm:p-8">
-            <div className="relative w-20 h-20 sm:w-28 sm:h-28 rounded-full overflow-hidden flex-shrink-0 border-2 border-white/10 shadow-2xl">
-              <Image
-                src={spotlightImg}
-                alt={spotlightArtist.name}
-                width={112}
-                height={112}
-                priority={false}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                onError={() => {
-                  setSpotlightImg("https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&h=500&auto=format&fit=crop")
-                }}
+          <div className="absolute right-4 bottom-4 text-white/5 group-hover:text-[#6C63FF]/10 transition-colors duration-500 pointer-events-none">
+            <Trophy size={80} className="rotate-[15deg] group-hover:rotate-[25deg] transition-transform duration-500" />
+          </div>
+          <div>
+            <h3 className="text-lg md:text-xl font-black text-white tracking-tight flex items-center gap-2">
+              Song Duel
+            </h3>
+            <p className="text-xs md:text-sm text-[#FF6584] font-bold uppercase tracking-wider mt-1">
+              Which one?
+            </p>
+            <p className="text-[11px] text-gray-400 font-medium mt-2 max-w-[280px]">
+              Pitting your top listening history artists. Vote to construct your custom mix!
+            </p>
+          </div>
+          <button className="mt-3 px-5 py-2 bg-gradient-to-r from-[#6C63FF] to-[#FF6584] text-white text-xs font-black uppercase tracking-wider rounded-full shadow-md w-fit group-hover:scale-105 active:scale-95 transition-transform duration-200">
+            Start Duel
+          </button>
+        </div>
+
+        {/* Listening Streak Card */}
+        <div 
+          onClick={() => router.push("/stats")}
+          className="bg-gradient-to-br from-[#121222] via-[#0b0b14] to-[#080810] border border-white/10 p-5 md:p-6 rounded-2xl cursor-pointer hover:border-[#6C63FF]/25 hover:shadow-[0_0_20px_rgba(108,99,255,0.1)] transition-all duration-300 relative overflow-hidden flex flex-col justify-between aspect-[2.8/1] md:aspect-[3.2/1] text-left group"
+        >
+          <div className="absolute right-4 bottom-4 text-white/5 group-hover:text-[#FF6584]/15 transition-colors duration-500 pointer-events-none">
+            <Flame size={80} className="rotate-[-10deg] group-hover:rotate-0 transition-transform duration-500 fill-transparent group-hover:fill-transparent" />
+          </div>
+          <div className="w-full">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-widest text-[#6C63FF]">
+                Your Streak
+              </span>
+              {topArtist && (
+                <span className="text-[9px] font-extrabold uppercase tracking-wider text-[#FF6584] truncate max-w-[120px]">
+                  🎧 {topArtist}
+                </span>
+              )}
+            </div>
+            <h3 className="text-2xl md:text-3xl font-black text-white mt-1.5 leading-none">
+              {streakDays} Day Streak
+            </h3>
+            <p className="text-[10px] text-gray-400 mt-1">
+              Today: {todayCount} songs. Play 10 songs to secure your goal!
+            </p>
+          </div>
+          
+          {/* Progress Bar */}
+          <div className="w-full mt-3">
+            <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden border border-white/5">
+              <div 
+                className="bg-gradient-to-r from-[#6C63FF] to-[#FF6584] h-full rounded-full transition-all duration-500" 
+                style={{ width: `${Math.min(100, (todayCount / 10) * 100)}%` }} 
               />
             </div>
-            <div className="flex-1 min-w-0 flex flex-col items-center sm:items-start text-center sm:text-left">
-              <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[#FF6584]">Artist Spotlight</span>
-              <h2 className="text-xl sm:text-3xl font-black text-white tracking-tight mt-1 truncate w-full">{spotlightArtist.name}</h2>
-              <p className="text-xs text-gray-400 mt-1 line-clamp-2 leading-relaxed max-w-xl">
-                {spotlightArtist.description}
-              </p>
-              <div className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-black text-sm font-bold hover:scale-105 transition-transform">
-                <Play size={14} className="fill-black" />
-                Explore Artist
-              </div>
-            </div>
           </div>
-        </Link>
+        </div>
       </div>
 
-      {/* ── LOGIN PROMO (guests) ── */}
-      {!session?.user && (
-        <div className="px-4 sm:px-6 mb-4">
-          <div className="relative overflow-hidden rounded-2xl p-4 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6"
-            style={{ background: "linear-gradient(135deg, #6C63FF22 0%, #FF658422 100%)", border: "1px solid rgba(108,99,255,0.15)" }}>
-            <div className="space-y-2 text-center sm:text-left">
-              <h3 className="text-xl font-black text-white flex items-center gap-2 justify-center sm:justify-start">
-                <Heart size={20} className="text-[#FF6584]" />
-                Save what you love
-              </h3>
-              <p className="text-sm text-[#B3B3B3] max-w-sm">
-                Sign in to like songs, create playlists, and sync your listening history across devices.
+      {/* Dynamic Sections Feed */}
+      {orderedSections.map((sec) => {
+        try {
+          const sectionData = modules[sec.dataKey]
+          if (!sectionData || !sectionData.data || !Array.isArray(sectionData.data) || sectionData.data.length === 0) {
+            return null
+          }
+
+          const title = sectionData.title || sec.fallbackTitle
+          const rawItems = sectionData.data
+          const items = rawItems.map((item: any) => mapRawItem(item, sec.typeFallback))
+
+          return (
+            <div key={sec.key}>
+              {/* ── DESKTOP RENDERING ── */}
+              <div className="hidden md:block">
+                <SectionRow title={title} seeAllHref={sec.seeAllHref}>
+                  {items.map((cardItem: any) => (
+                    <UniversalCard key={cardItem.id || cardItem.url} {...cardItem} />
+                  ))}
+                </SectionRow>
+              </div>
+
+              {/* ── PREMIUM MOBILE-ONLY CUSTOM NON-REPETITIVE RENDERING ── */}
+              <div className="md:hidden">
+                {sec.key === "trending" ? (
+                  /* Premium Spotify-style 2-column Grid for top picks */
+                  <div className="px-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-black text-white tracking-tight">{title}</h3>
+                      {sec.seeAllHref && (
+                        <button
+                          onClick={() => router.push(sec.seeAllHref!)}
+                          className="text-[10px] font-bold text-[#6C63FF] uppercase tracking-wider px-2.5 py-1 bg-white/5 rounded-full border border-white/5"
+                        >
+                          See All
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {items.slice(0, 6).map((item: any, idx: number) => {
+                        const isCurrent = currentSong?.id === item.id
+                        const isCurrentPlaying = isCurrent && isPlaying
+                        return (
+                          <div
+                            key={item.id || idx}
+                            onClick={() => handleGenericClick(rawItems[idx])}
+                            className={`flex items-center gap-2 p-1.5 bg-[#181818] active:bg-[#282828] rounded-xl overflow-hidden cursor-pointer border border-transparent transition-all ${
+                              isCurrent ? "bg-[#6C63FF]/10 border-[#6C63FF]/20" : ""
+                            }`}
+                          >
+                            <div className="relative w-11 h-11 rounded-lg overflow-hidden flex-shrink-0 bg-[#282828]">
+                              <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                              {isCurrentPlaying && (
+                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                  <span className="w-1.5 h-1.5 bg-[#FF6584] rounded-full animate-ping" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1 pr-1">
+                              <p className={`text-xs font-semibold truncate ${isCurrent ? "text-[#FF6584]" : "text-white"}`}>
+                                {item.name}
+                              </p>
+                              <p className="text-[10px] text-[#B3B3B3] truncate mt-0.5">
+                                {item.subtitle || "Trending Song"}
+                              </p>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ) : sec.key === "charts" ? (
+                  /* Rank Badged Horizontal Slider for Top Charts */
+                  <div className="px-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-black text-white tracking-tight">{title}</h3>
+                      {sec.seeAllHref && (
+                        <button
+                          onClick={() => router.push(sec.seeAllHref!)}
+                          className="text-[10px] font-bold text-[#6C63FF] uppercase tracking-wider px-2.5 py-1 bg-white/5 rounded-full border border-white/5"
+                        >
+                          See All
+                        </button>
+                      )}
+                    </div>
+                    <div
+                      className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                      style={{ WebkitOverflowScrolling: "touch" }}
+                    >
+                      {items.map((item: any, idx: number) => (
+                        <div
+                          key={item.id || idx}
+                          onClick={() => handleGenericClick(rawItems[idx])}
+                          className="flex-shrink-0 w-[140px] snap-start bg-[#181818] p-3 rounded-2xl relative overflow-hidden text-left"
+                        >
+                          {/* Beautiful glassmorphic background layer */}
+                          <div className="absolute inset-0 bg-gradient-to-b from-[#6C63FF]/5 to-transparent pointer-events-none" />
+                          <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-[#282828] mb-3">
+                            <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                            <div className="absolute top-2 left-2 w-7 h-7 rounded-full bg-black/70 backdrop-blur-md flex items-center justify-center font-black text-[#FF6584] text-xs shadow border border-white/5">
+                              {idx + 1}
+                            </div>
+                          </div>
+                          <p className="text-xs font-bold text-white truncate leading-tight">{item.name}</p>
+                          <p className="text-[10px] text-gray-400 truncate mt-0.5">Top Chart</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : sec.key === "albums" ? (
+                  /* Larger, Prominent Card Slider for New Releases */
+                  <div className="px-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-black text-white tracking-tight">{title}</h3>
+                      {sec.seeAllHref && (
+                        <button
+                          onClick={() => router.push(sec.seeAllHref!)}
+                          className="text-[10px] font-bold text-[#6C63FF] uppercase tracking-wider px-2.5 py-1 bg-white/5 rounded-full border border-white/5"
+                        >
+                          See All
+                        </button>
+                      )}
+                    </div>
+                    <div
+                      className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                      style={{ WebkitOverflowScrolling: "touch" }}
+                    >
+                      {items.map((item: any, idx: number) => (
+                        <div
+                          key={item.id || idx}
+                          onClick={() => handleGenericClick(rawItems[idx])}
+                          className="w-[160px] flex-shrink-0 snap-start bg-[#181818] p-3 rounded-xl space-y-2.5 text-left hover:shadow-2xl"
+                        >
+                          <div className="relative aspect-square rounded-lg overflow-hidden bg-[#282828] shadow-md">
+                            <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-white truncate">{item.name}</p>
+                            <p className="text-[10px] text-[#B3B3B3] truncate mt-0.5">{item.subtitle}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : sec.key === "promo0" ? (
+                  /* Apple Music-style Vertical Triple-Stacks slider for Fresh Hits */
+                  <div className="px-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-black text-white tracking-tight">{title}</h3>
+                      {sec.seeAllHref && (
+                        <button
+                          onClick={() => router.push(sec.seeAllHref!)}
+                          className="text-[10px] font-bold text-[#6C63FF] uppercase tracking-wider px-2.5 py-1 bg-white/5 rounded-full border border-white/5"
+                        >
+                          See All
+                        </button>
+                      )}
+                    </div>
+                    <div
+                      className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                      style={{ WebkitOverflowScrolling: "touch" }}
+                    >
+                      {Array.from({ length: Math.ceil(items.length / 3) }).map((_, chunkIdx) => {
+                        const startIdx = chunkIdx * 3
+                        const chunk = items.slice(startIdx, startIdx + 3)
+                        return (
+                          <div key={chunkIdx} className="w-[280px] flex-shrink-0 flex flex-col gap-2 snap-start">
+                            {chunk.map((item: any, itemIdx: number) => {
+                              const globalIdx = startIdx + itemIdx
+                              const isCurrent = currentSong?.id === item.id
+                              return (
+                                <div
+                                  key={item.id || itemIdx}
+                                  onClick={() => handleGenericClick(rawItems[globalIdx])}
+                                  className={`flex items-center gap-3 p-2 bg-[#181818]/60 active:bg-[#282828] rounded-xl border border-transparent ${
+                                    isCurrent ? "bg-[#6C63FF]/15 border-[#6C63FF]/10" : ""
+                                  }`}
+                                >
+                                  <div className="relative w-11 h-11 rounded-lg overflow-hidden flex-shrink-0 bg-[#282828]">
+                                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <p className={`text-xs font-semibold truncate ${isCurrent ? "text-[#FF6584]" : "text-white"}`}>
+                                      {item.name}
+                                    </p>
+                                    <p className="text-[9px] text-[#B3B3B3] truncate mt-0.5">
+                                      {item.subtitle}
+                                    </p>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ) : sec.key === "artist_recos" ? (
+                  /* Elegant Bordered Circular Profile Slider for Recommended Artists */
+                  <div className="px-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-black text-white tracking-tight">{title}</h3>
+                      {sec.seeAllHref && (
+                        <button
+                          onClick={() => router.push(sec.seeAllHref!)}
+                          className="text-[10px] font-bold text-[#6C63FF] uppercase tracking-wider px-2.5 py-1 bg-white/5 rounded-full border border-white/5"
+                        >
+                          See All
+                        </button>
+                      )}
+                    </div>
+                    <div
+                      className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                      style={{ WebkitOverflowScrolling: "touch" }}
+                    >
+                      {items.map((item: any, idx: number) => (
+                        <div
+                          key={item.id || idx}
+                          onClick={() => handleGenericClick(rawItems[idx])}
+                          className="w-[120px] flex-shrink-0 snap-start text-center space-y-2 cursor-pointer group"
+                        >
+                          <div className="w-24 h-24 rounded-full overflow-hidden mx-auto border border-white/10 group-hover:scale-105 active:scale-95 transition-transform duration-350 shadow-md bg-[#282828]">
+                            <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                          </div>
+                          <p className="text-xs font-semibold text-white truncate max-w-[100px] mx-auto leading-tight">{item.name}</p>
+                          <p className="text-[9px] text-gray-500 font-medium uppercase tracking-wider leading-none">Artist</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : sec.key === "discover" ? (
+                  /* Glassmorphic Gradient Text Pills for Moods & Genres */
+                  <div className="px-4 space-y-3">
+                    <h3 className="text-lg font-black text-white tracking-tight text-left">{title}</h3>
+                    <div
+                      className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                      style={{ WebkitOverflowScrolling: "touch" }}
+                    >
+                      {items.map((item: any, idx: number) => {
+                        const gradients = [
+                          "from-[#6C63FF]/30 to-[#FF6584]/20 border-[#6C63FF]/20",
+                          "from-[#00BCD4]/30 to-[#3F51B5]/20 border-[#00BCD4]/20",
+                          "from-[#FF9800]/30 to-[#E91E63]/20 border-[#FF9800]/20",
+                          "from-[#4CAF50]/30 to-[#00838f]/20 border-[#4CAF50]/20"
+                        ]
+                        const grad = gradients[idx % gradients.length]
+                        return (
+                          <div
+                            key={item.id || idx}
+                            onClick={() => handleGenericClick(rawItems[idx])}
+                            className={`flex-shrink-0 px-5 py-3 snap-start bg-gradient-to-r ${grad} border rounded-full backdrop-blur-md shadow cursor-pointer hover:brightness-110 active:scale-95 transition-all text-center`}
+                          >
+                            <span className="text-xs font-bold text-white tracking-wide uppercase">{item.name}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  /* Standard universal card slider fallback for promo, podcast, hotspot, etc. */
+                  <div className="px-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-black text-white tracking-tight">{title}</h3>
+                      {sec.seeAllHref && (
+                        <button
+                          onClick={() => router.push(sec.seeAllHref!)}
+                          className="text-[10px] font-bold text-[#6C63FF] uppercase tracking-wider px-2.5 py-1 bg-white/5 rounded-full border border-white/5"
+                        >
+                          See All
+                        </button>
+                      )}
+                    </div>
+                    <div
+                      className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                      style={{ WebkitOverflowScrolling: "touch" }}
+                    >
+                      {items.map((item: any, idx: number) => (
+                        <div
+                          key={item.id || idx}
+                          onClick={() => handleGenericClick(rawItems[idx])}
+                          className="w-[130px] flex-shrink-0 snap-start bg-[#181818] p-2.5 rounded-xl space-y-2 text-left"
+                        >
+                          <div className={`relative aspect-square w-full overflow-hidden bg-[#282828] shadow-md ${sec.key === "artist_recos" ? "rounded-full" : "rounded-lg"}`}>
+                            <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                          </div>
+                          <div className="min-w-0 pr-1">
+                            <p className="text-xs font-semibold text-white truncate">{item.name}</p>
+                            <p className="text-[9px] text-[#B3B3B3] truncate mt-0.5">{item.subtitle}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        } catch (error) {
+          console.error(`Error rendering homepage section "${sec.key}":`, error)
+          return null
+        }
+      })}
+
+      {/* ── FULLSCREEN SONG DUEL MODAL OVERLAY ── */}
+      {isDuelOpen && (
+        <div className="z-50 fixed inset-0 bg-[#080810]/98 backdrop-blur-2xl flex flex-col p-4 md:p-8 overflow-y-auto select-none">
+          {/* Header */}
+          <div className="w-full max-w-4xl mx-auto flex items-center justify-between mb-8">
+            <div className="text-left">
+              <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-2">
+                <Trophy size={28} className="text-[#FF6584] fill-[#FF6584]" /> Song Duel
+              </h2>
+              <p className="text-xs text-gray-400 font-semibold mt-1">
+                {duelsCompleted} duels completed today
               </p>
             </div>
             <button
-              onClick={() => {
-                const event = new CustomEvent("trigger-auth")
-                window.dispatchEvent(event)
-              }}
-              className="px-8 py-3 bg-white text-black text-sm font-black rounded-full hover:scale-105 transition-transform shadow-xl whitespace-nowrap"
+              onClick={() => setIsDuelOpen(false)}
+              className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors"
             >
-              Sign up free
+              <X size={20} />
             </button>
+          </div>
+
+          {/* Content Area */}
+          <div className="flex-1 flex flex-col items-center justify-center w-full max-w-4xl mx-auto gap-8">
+            {isFetchingSongs ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-16">
+                <Loader2 size={40} className="text-[#6C63FF] animate-spin" />
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Conjuring Duels...</p>
+              </div>
+            ) : duelSongs.length < 2 ? (
+              <div className="text-center py-16 space-y-4">
+                <Sparkles size={48} className="text-[#6C63FF] mx-auto animate-pulse" />
+                <p className="text-lg font-bold text-white">Generating battle tracks...</p>
+                <button
+                  onClick={loadNextDuel}
+                  className="px-6 py-2.5 bg-gradient-to-r from-[#6C63FF] to-[#FF6584] text-xs font-bold rounded-full"
+                >
+                  Retry Fetch
+                </button>
+              </div>
+            ) : (
+              <div className="w-full flex flex-col md:flex-row gap-6 items-center justify-center">
+                {duelSongs.slice(0, 2).map((song, idx) => {
+                  const isCurrent = currentSong?.id === song.id
+                  const isPlayingSong = isCurrent && isPlaying
+                  
+                  return (
+                    <div
+                      key={song.id || idx}
+                      className="w-full md:w-[320px] bg-gradient-to-b from-[#181824] to-[#0d0d14] border border-white/5 p-5 rounded-3xl flex flex-col items-center justify-between text-center shadow-2xl relative overflow-hidden group aspect-[3/4]"
+                    >
+                      {/* Glowing subtle ring */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#6C63FF]/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
+                      {/* Song Cover Art */}
+                      <div className="relative w-44 h-44 md:w-48 md:h-48 aspect-square rounded-2xl overflow-hidden shadow-xl bg-[#282828] mb-4 flex items-center justify-center">
+                        {song.image ? (
+                          <img
+                            src={song.image}
+                            alt={song.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        ) : (
+                          <Sparkles size={40} className="text-white/20" />
+                        )}
+                        {/* Floating play preview overlay */}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-300">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (isCurrent) {
+                                isPlaying ? pause() : play()
+                              } else {
+                                play(song)
+                              }
+                            }}
+                            className="w-12 h-12 rounded-full bg-[#6C63FF] flex items-center justify-center text-white shadow-lg hover:scale-105 active:scale-95 transition-transform"
+                          >
+                            {isPlayingSong ? (
+                              <Pause size={20} className="fill-white text-white" />
+                            ) : (
+                              <Play size={20} className="fill-white text-white ml-0.5" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Title & Artist */}
+                      <div className="w-full min-w-0 px-2 space-y-1">
+                        <h3 className="text-base font-bold text-white truncate" title={song.name}>
+                          {song.name}
+                        </h3>
+                        <p className="text-xs text-gray-400 truncate" title={song.artist}>
+                          {song.artist}
+                        </p>
+                      </div>
+
+                      {/* Vote Action */}
+                      <button
+                        onClick={() => handleVote(song)}
+                        className="w-full mt-6 py-3 bg-white/5 border border-white/10 hover:border-[#FF6584]/40 hover:bg-[#FF6584]/10 rounded-full text-xs font-black uppercase tracking-wider text-white hover:text-[#FF6584] transition-all active:scale-95 shadow-md"
+                      >
+                        Vote
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Your Mix Unlock area */}
+            {duelsCompleted >= 5 && (
+              <div className="mt-8 flex flex-col items-center gap-2">
+                <button
+                  onClick={playYourMix}
+                  className="px-8 py-3.5 bg-gradient-to-r from-[#6C63FF] via-[#8C85FF] to-[#FF6584] text-sm font-black text-white uppercase tracking-wider rounded-full shadow-lg shadow-[#6C63FF]/30 hover:scale-105 active:scale-95 transition-transform"
+                >
+                  Play Your Mix 🎵
+                </button>
+                <span className="text-[9px] text-[#FF6584] uppercase tracking-widest font-extrabold animate-pulse">
+                  Custom Duel mix unlocked!
+                </span>
+              </div>
+            )}
           </div>
         </div>
       )}

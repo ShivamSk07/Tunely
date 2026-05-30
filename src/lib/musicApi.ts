@@ -297,19 +297,146 @@ export async function fetchAlbumDetails(link: string) {
   return result
 }
 
+export function hasArtistToken(link: string): boolean {
+  if (!link) return false
+  const cleaned = cleanJioSaavnLink(link)
+  const parts = cleaned.split('/').filter(Boolean)
+  const artistIndex = parts.indexOf('artist')
+  if (artistIndex === -1) return false
+  const tokenSegment = parts[artistIndex + 2]
+  return !!(tokenSegment && tokenSegment.length >= 10)
+}
+
+export function cleanArtistNameForSearch(name: string): string {
+  if (!name) return ""
+  let parsed = name
+  if (parsed.includes(" - ")) {
+    parsed = parsed.split(" - ")[0]
+  }
+  if (parsed.includes(",")) {
+    parsed = parsed.split(",")[0]
+  }
+  if (parsed.includes("&")) {
+    parsed = parsed.split("&")[0]
+  }
+  if (parsed.toLowerCase().includes(" and ")) {
+    parsed = parsed.split(/ and /i)[0]
+  }
+  return parsed.trim()
+}
+
 export async function fetchArtistDetails(link: string) {
   const cacheKey = `artist:${link}`
   const cached = getCachedData(cacheKey)
   if (cached) return cached
 
   const cleaned = cleanJioSaavnLink(link)
-  const res = await fetch(`${BASE_URL}/artist?link=${encodeURIComponent(cleaned)}`, {
-    signal: AbortSignal.timeout(API_TIMEOUT_MS),
-    next: { revalidate: 3600 }
-  })
-  if (!res.ok) throw new Error("Failed to fetch artist details")
-  const json = await res.json()
-  const data = json.data || {}
+  const parts = cleaned.split('/').filter(Boolean)
+  const artistIndex = parts.indexOf('artist')
+  const hasToken = hasArtistToken(cleaned)
+
+  let targetLink = cleaned
+
+  if (!hasToken && artistIndex !== -1 && parts[artistIndex + 1]) {
+    console.log(`[Artist Resolution] Link lacks token: ${link}. Attempting dynamic resolution...`)
+    let namePart = parts[artistIndex + 1]
+    if (namePart.endsWith('-songs')) {
+      namePart = namePart.substring(0, namePart.length - 6)
+    } else if (namePart.endsWith('-albums')) {
+      namePart = namePart.substring(0, namePart.length - 7)
+    }
+    const artistName = decodeURIComponent(namePart).replace(/-/g, ' ')
+    const cleanName = cleanArtistNameForSearch(artistName)
+    
+    try {
+      const searchRes = await fetch(`${BASE_URL}/search/artists?q=${encodeURIComponent(cleanName)}`, {
+        signal: AbortSignal.timeout(API_TIMEOUT_MS),
+        next: { revalidate: 3600 }
+      })
+      if (searchRes.ok) {
+        const searchJson = await searchRes.json()
+        const firstArtist = searchJson?.data?.results?.[0]
+        const resolvedLink = firstArtist?.url || firstArtist?.link
+        if (resolvedLink) {
+          console.log(`[Artist Resolution] Resolved "${artistName}" (cleaned: "${cleanName}") to ${resolvedLink}`)
+          targetLink = cleanJioSaavnLink(resolvedLink)
+        }
+      }
+    } catch (err) {
+      console.warn(`[Artist Resolution] Failed resolving name for ${artistName} (cleaned: ${cleanName}):`, err)
+    }
+  }
+
+  let data: any = null
+  let fetchFailed = false
+
+  try {
+    const res = await fetch(`${BASE_URL}/artist?link=${encodeURIComponent(targetLink)}`, {
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
+      next: { revalidate: 3600 }
+    })
+    
+    if (res.ok) {
+      const json = await res.json()
+      if (json.status !== "Failed") {
+        data = json.data || {}
+      } else {
+        fetchFailed = true
+      }
+    } else {
+      fetchFailed = true
+    }
+  } catch (error) {
+    console.error("Direct artist fetch error:", error)
+    fetchFailed = true
+  }
+
+  // If the fetch failed (due to bad link, 400, or unofficial API error), try a secondary name-based search fallback
+  if (fetchFailed) {
+    console.warn(`[Artist Resolution] Direct fetch failed for ${targetLink}. Trying secondary name-based search fallback...`)
+    if (artistIndex !== -1 && parts[artistIndex + 1]) {
+      let namePart = parts[artistIndex + 1]
+      if (namePart.endsWith('-songs')) {
+        namePart = namePart.substring(0, namePart.length - 6)
+      } else if (namePart.endsWith('-albums')) {
+        namePart = namePart.substring(0, namePart.length - 7)
+      }
+      const artistName = decodeURIComponent(namePart).replace(/-/g, ' ')
+      const cleanName = cleanArtistNameForSearch(artistName)
+      
+      try {
+        const searchRes = await fetch(`${BASE_URL}/search/artists?q=${encodeURIComponent(cleanName)}`, {
+          signal: AbortSignal.timeout(API_TIMEOUT_MS),
+          next: { revalidate: 3600 }
+        })
+        if (searchRes.ok) {
+          const searchJson = await searchRes.json()
+          const firstArtist = searchJson?.data?.results?.[0]
+          const resolvedLink = firstArtist?.url || firstArtist?.link
+          if (resolvedLink && cleanJioSaavnLink(resolvedLink) !== targetLink) {
+            const retryLink = cleanJioSaavnLink(resolvedLink)
+            console.log(`[Artist Resolution] Secondary fallback: fetching resolved link: ${retryLink}`)
+            const retryRes = await fetch(`${BASE_URL}/artist?link=${encodeURIComponent(retryLink)}`, {
+              signal: AbortSignal.timeout(API_TIMEOUT_MS),
+              next: { revalidate: 3600 }
+            })
+            if (retryRes.ok) {
+              const json = await retryRes.json()
+              if (json.status !== "Failed") {
+                data = json.data || {}
+              }
+            }
+          }
+        }
+      } catch (fallbackErr) {
+        console.warn(`[Artist Resolution] Secondary search fallback failed:`, fallbackErr)
+      }
+    }
+  }
+
+  if (!data || !data.id) {
+    throw new Error("Failed to fetch artist details after all attempts")
+  }
 
   // Artist data contains top songs and albums (check both snake_case from proxy and fallback)
   const rawSongs: RawSong[] = data.top_songs || data.songs || []
