@@ -97,87 +97,35 @@ function setCachedData(key: string, data: any): void {
 const BASE_URL = process.env.MUSIC_API_URL || "https://my-repo-kohl-eta.vercel.app"
 const API_TIMEOUT_MS = 10000 // 10-second timeout for all API calls
 
-export const FALLBACK_TRENDING_SONGS: FormattedSong[] = [
-  {
-    id: "fallback_1",
-    name: "Apna Bana Le",
-    artist: "Arijit Singh & Sachin-Jigar",
-    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400&auto=format&fit=crop",
-    streamUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-    duration: 372,
-    playCount: "45,002,100",
-    year: "2023"
-  },
-  {
-    id: "fallback_2",
-    name: "Kesariya",
-    artist: "Arijit Singh & Pritam",
-    image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400&auto=format&fit=crop",
-    streamUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-    duration: 425,
-    playCount: "38,124,420",
-    year: "2022"
-  },
-  {
-    id: "fallback_3",
-    name: "Chaleya",
-    artist: "Anirudh Ravichander & Arijit Singh",
-    image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=400&auto=format&fit=crop",
-    streamUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-    duration: 302,
-    playCount: "89,211,040",
-    year: "2023"
-  },
-  {
-    id: "fallback_4",
-    name: "Kahani Suno 2.0",
-    artist: "Kaifi Khalil",
-    image: "https://images.unsplash.com/photo-1510915228340-29c85a43dcfe?q=80&w=400&auto=format&fit=crop",
-    streamUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
-    duration: 302,
-    playCount: "19,873,320",
-    year: "2023"
-  },
-  {
-    id: "fallback_5",
-    name: "Heeriye",
-    artist: "Jasleen Royal & Arijit Singh",
-    image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=400&auto=format&fit=crop",
-    streamUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
-    duration: 362,
-    playCount: "124,310,980",
-    year: "2023"
-  },
-  {
-    id: "fallback_6",
-    name: "Apna Bana Le (Lofi)",
-    artist: "Arijit Singh & Sachin-Jigar",
-    image: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=400&auto=format&fit=crop",
-    streamUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
-    duration: 240,
-    playCount: "25,321,990",
-    year: "2024"
-  }
-]
-
-export async function fetchTrending() {
-  const cacheKey = "trending_v3"
+export async function fetchTrending(): Promise<FormattedSong[]> {
+  const cacheKey = "trending"
   const cached = getCachedData(cacheKey)
   if (cached) return cached
 
   try {
-    // Reuse fetchModules which successfully calls the homepage /modules endpoint for real trending Hindi songs!
     const modules = await fetchModules("hindi")
     if (modules && modules.trending_songs && modules.trending_songs.length > 0) {
-      const result = modules.trending_songs.filter((s: FormattedSong) => !s.id.startsWith("fallback_"))
+      const result = modules.trending_songs
       setCachedData(cacheKey, result)
       return result
     }
-    return FALLBACK_TRENDING_SONGS
   } catch (error) {
-    console.warn("fetchTrending failed. Serving premium fallbacks:", error)
-    return FALLBACK_TRENDING_SONGS
+    console.warn("fetchTrending via modules failed, attempting live search fallback:", error)
   }
+
+  // Live dynamic query fallback via search
+  try {
+    const searchRes = await searchSongs("latest hindi trending hits", "songs", "hindi")
+    const songs = searchRes?.songs || []
+    if (songs.length > 0) {
+      setCachedData(cacheKey, songs)
+      return songs
+    }
+  } catch (e) {
+    console.error("Live trending search fallback also failed:", e)
+  }
+
+  return []
 }
 
 export async function searchSongs(query: string, type?: "all" | "songs", lang = "hindi") {
@@ -503,46 +451,10 @@ export async function fetchPlaylistDetails(link: string) {
     setCachedData(cacheKey, result)
     return result
   } catch (error) {
-    console.warn(`fetchPlaylistDetails failed for link=${link}. Serving premium fallback:`, error)
-    return {
-      id: "fallback_playlist",
-      name: "Featured Hits",
-      image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400&auto=format&fit=crop",
-      songs: FALLBACK_TRENDING_SONGS,
-    }
+    console.warn(`fetchPlaylistDetails failed for link=${link}:`, error)
+    return null
   }
 }
-
-export const FALLBACK_TRENDING_ALBUMS = [
-  {
-    id: "fallback_alb_1",
-    name: "Chilled Electronic",
-    artist: "Synthwave / Chill",
-    image: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?q=80&w=400&auto=format&fit=crop",
-    link: "https://www.jiosaavn.com/album/chilled-electronic/1"
-  },
-  {
-    id: "fallback_alb_2",
-    name: "Ultimate Pop Hits",
-    artist: "Pop Sensations",
-    image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=400&auto=format&fit=crop",
-    link: "https://www.jiosaavn.com/album/ultimate-pop-hits/2"
-  },
-  {
-    id: "fallback_alb_3",
-    name: "Cozy Lo-Fi Cafe",
-    artist: "Lofi Cafe Chill",
-    image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=400&auto=format&fit=crop",
-    link: "https://www.jiosaavn.com/album/cozy-lofi-cafe/3"
-  },
-  {
-    id: "fallback_alb_4",
-    name: "Epic Rock Anthems",
-    artist: "Rock Classics",
-    image: "https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?q=80&w=400&auto=format&fit=crop",
-    link: "https://www.jiosaavn.com/album/epic-rock-anthems/4"
-  }
-]
 
 export async function fetchTrendingAlbums() {
   const cacheKey = "trendingAlbums"
@@ -566,34 +478,39 @@ export async function fetchTrendingAlbums() {
       signal: AbortSignal.timeout(API_TIMEOUT_MS),
       next: { revalidate: 3600 }
     })
-    if (!res.ok) throw new Error("Status code not OK")
-    const json = await res.json()
-
-    const raw: TrendingAlbumResult[] = json.data || []
-    const rawAlbums = raw.filter((item) => item.type === "album")
-    const result = rawAlbums.map((alb) => ({
-      id: alb.id,
-      name: alb.name || alb.title,
-      artist: alb.subtitle || alb.description || "Trending Album",
-      image: alb.image?.[2]?.link || alb.image?.[alb.image.length - 1]?.link || "",
-      link: alb.url || alb.link || "",
-    }))
-    
-    if (result.length === 0) {
-      throw new Error("Empty trending albums results returned")
+    if (res.ok) {
+      const json = await res.json()
+      const raw: TrendingAlbumResult[] = json.data || []
+      const rawAlbums = raw.filter((item) => item.type === "album")
+      const result = rawAlbums.map((alb) => ({
+        id: alb.id,
+        name: alb.name || alb.title,
+        artist: alb.subtitle || alb.description || "Trending Album",
+        image: alb.image?.[2]?.link || alb.image?.[alb.image.length - 1]?.link || "",
+        link: alb.url || alb.link || "",
+      }))
+      
+      if (result.length > 0) {
+        setCachedData(cacheKey, result)
+        return result
+      }
     }
-
-    setCachedData(cacheKey, result)
-    return result
   } catch (error) {
-    console.warn("Failed to fetch trending albums from API. Serving premium fallbacks:", error)
-    // Cache the fallbacks for 1 minute so we don't spam the failing endpoint
-    memoryCache.set(cacheKey, {
-      data: FALLBACK_TRENDING_ALBUMS,
-      expiry: Date.now() + 60 * 1000
-    })
-    return FALLBACK_TRENDING_ALBUMS
+    console.warn("fetchTrendingAlbums direct failed, attempting live search fallback:", error)
   }
+
+  // Live dynamic query fallback via search
+  try {
+    const searchRes = await searchAlbums("latest hindi albums")
+    if (searchRes && searchRes.length > 0) {
+      setCachedData(cacheKey, searchRes)
+      return searchRes
+    }
+  } catch (e) {
+    console.error("Live search fallback for albums failed:", e)
+  }
+
+  return []
 }
 
 export async function fetchSongRecommendations(id: string): Promise<FormattedSong[]> {
@@ -701,26 +618,11 @@ export async function fetchJioSaavnPlaylistById(id: string) {
       isJioSaavn: true,
     }
 
-    // If the playlist has empty songs, fetch from fallback
-    if (songs.length === 0) {
-      console.warn(`Playlist id=${id} has 0 songs. Serving premium fallback songs.`)
-      result.songs = FALLBACK_TRENDING_SONGS
-      result.songCount = FALLBACK_TRENDING_SONGS.length
-    }
-
     setCachedData(cacheKey, result)
     return result
   } catch (error) {
-    console.warn(`fetchJioSaavnPlaylistById failed for id=${id}. Serving premium fallback:`, error)
-    return {
-      id: id,
-      name: "Featured Hits",
-      image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400&auto=format&fit=crop",
-      description: "Enjoy a handpicked collection of popular tracks. (Server fallback)",
-      songCount: FALLBACK_TRENDING_SONGS.length,
-      songs: FALLBACK_TRENDING_SONGS,
-      isJioSaavn: true,
-    }
+    console.warn(`fetchJioSaavnPlaylistById failed for id=${id}:`, error)
+    return null
   }
 }
 

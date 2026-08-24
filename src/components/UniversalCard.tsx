@@ -147,17 +147,16 @@ export default function UniversalCard({ id, name, subtitle, type, image, url }: 
   }
 
   const isCircular = type === "artist" || type === "artist_recos"
-  const placeholderGradient = "bg-gradient-to-br from-[#6C63FF]/30 to-[#FF6584]/20"
 
   return (
     <div
       onClick={handleCardClick}
-      className="playlist-card w-[130px] md:w-[160px] bg-[#181818] hover:bg-[#282828] p-3 md:p-4 space-y-3 cursor-pointer transition-all duration-200 rounded-xl hover:-translate-y-1 hover:shadow-lg snap-start flex-shrink-0 text-left block font-normal group"
+      className="playlist-card w-[130px] md:w-[160px] bg-white/[0.025] hover:bg-white/[0.06] border border-white/[0.06] hover:border-white/20 p-3 md:p-3.5 space-y-3 cursor-pointer transition-all duration-200 rounded-2xl hover:-translate-y-1 hover:shadow-lg hover:shadow-black/50 snap-start flex-shrink-0 text-left block font-normal group"
     >
       {/* Aspect-square image container matching original exactly */}
       <div
-        className={`relative aspect-square w-full overflow-hidden bg-[#282828] shadow-xl ${
-          isCircular ? "rounded-full" : "rounded-lg"
+        className={`relative aspect-square w-full overflow-hidden bg-[#161722] border border-white/[0.06] ${
+          isCircular ? "rounded-full" : "rounded-xl"
         }`}
       >
         {image && !imgFailed ? (
@@ -166,58 +165,54 @@ export default function UniversalCard({ id, name, subtitle, type, image, url }: 
             alt={name}
             fill
             sizes="(max-width: 768px) 130px, 160px"
-            className={`object-cover ${isCircular ? "rounded-full" : "rounded-lg"}`}
+            className={`object-cover ${isCircular ? "rounded-full" : "rounded-xl"} group-hover:scale-105 transition-transform duration-300`}
             onError={() => setImgFailed(true)}
             unoptimized={true}
           />
         ) : (
-          <div className={`w-full h-full flex items-center justify-center ${placeholderGradient}`}>
-            {isCircular ? (
-              <Disc size={36} className="text-[#FF6584] opacity-80" />
-            ) : (
-              <Disc size={36} className="text-[#6C63FF] opacity-80" />
-            )}
+          <div className="w-full h-full flex items-center justify-center bg-white/[0.03]">
+            <Disc size={32} className="text-white/20" />
           </div>
         )}
 
-        {/* Hover play button slide-up glass overlay matching original */}
-        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-300">
-          <div className="w-10 h-10 bg-[#6C63FF] rounded-full flex items-center justify-center text-white scale-75 group-hover:scale-100 transition-all duration-300 shadow-lg hover:scale-105 active:scale-95">
+        {/* Hover play button overlay */}
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-200">
+          <div className="w-10 h-10 bg-white text-black rounded-full flex items-center justify-center scale-90 group-hover:scale-100 transition-all duration-200 shadow-md hover:scale-105 active:scale-95">
             {isCurrentPlaying ? (
-              <Pause size={16} className="fill-white text-white" />
+              <Pause size={16} className="fill-black text-black" />
             ) : type === "radio_station" ? (
-              <RadioReceiver size={16} className="text-white" />
+              <RadioReceiver size={16} className="text-black" />
             ) : (
-              <Play size={16} className="fill-white ml-0.5 text-white" />
+              <Play size={16} className="fill-black ml-0.5 text-black" />
             )}
           </div>
         </div>
 
         {/* Equalizer overlay on cover art */}
         {isCurrentPlaying && (
-          <div className="absolute bottom-2 left-2 flex items-end gap-0.5 h-4 z-10 bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-sm">
-            <span className="w-0.5 bg-[#FF6584] rounded-full animate-bounce h-2" style={{ animationDelay: "0s", animationDuration: "0.6s" }} />
-            <span className="w-0.5 bg-[#FF6584] rounded-full animate-bounce h-3" style={{ animationDelay: "0.15s", animationDuration: "0.6s" }} />
-            <span className="w-0.5 bg-[#FF6584] rounded-full animate-bounce h-2.5" style={{ animationDelay: "0.3s", animationDuration: "0.6s" }} />
+          <div className="absolute bottom-2 left-2 flex items-end gap-0.5 h-4 z-10 bg-black/70 px-1.5 py-0.5 rounded backdrop-blur-sm">
+            <span className="w-0.5 bg-white rounded-full animate-bounce h-2" style={{ animationDelay: "0s", animationDuration: "0.6s" }} />
+            <span className="w-0.5 bg-white rounded-full animate-bounce h-3" style={{ animationDelay: "0.15s", animationDuration: "0.6s" }} />
+            <span className="w-0.5 bg-white rounded-full animate-bounce h-2.5" style={{ animationDelay: "0.3s", animationDuration: "0.6s" }} />
           </div>
         )}
       </div>
 
-      {/* Text Details matching original RowSection exactly */}
+      {/* Text Details */}
       <div className="min-w-0">
         <p
           className={`text-xs md:text-sm font-semibold truncate ${
-            isCurrentSong ? "text-[#FF6584]" : "text-white"
+            isCurrentSong ? "text-white font-bold" : "text-white/90 group-hover:text-white"
           }`}
           title={name}
         >
           {name}
         </p>
         <p
-          className="text-[10px] md:text-xs text-[#B3B3B3] truncate mt-0.5"
+          className="text-[10px] md:text-xs text-white/50 truncate mt-0.5 group-hover:text-white/70 transition-colors"
           title={subtitle}
         >
-          {subtitle || (type === "radio_station" ? "Station" : "JioSaavn Mix")}
+          {subtitle || (type === "radio_station" ? "Station" : "Mix")}
         </p>
       </div>
     </div>

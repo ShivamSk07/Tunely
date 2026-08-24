@@ -59,10 +59,10 @@ export default function MobileNav() {
             >
               {/* Active indicator pill at top */}
               <span
-                className="absolute top-0 left-1/2 -translate-x-1/2 h-[2px] rounded-b-full transition-all duration-300"
+                className="absolute top-0 left-1/2 -translate-x-1/2 h-[2px] rounded-b-full transition-all duration-200"
                 style={{
                   width: isActive ? "20px" : "0px",
-                  background: "linear-gradient(90deg, #6C63FF, #FF6584)",
+                  background: "#ffffff",
                 }}
               />
 

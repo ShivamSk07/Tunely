@@ -53,13 +53,14 @@ export default function RowAlbums({ title, albums, isLoading, mobileCardSize = "
   return (
     <div className="space-y-3 select-none">
 
-      {/* Header — same style as RowSection */}
+      {/* Header */}
       <div className="flex items-center justify-between px-4 md:px-6">
-        {title && <h3 className="text-lg md:text-2xl font-black text-white tracking-tight">{title}</h3>}
+        <h3 className="text-lg md:text-2xl font-bold text-white tracking-tight hover:text-white/80 cursor-pointer">{title}</h3>
+        {/* Show all button only on desktop */}
         {albums.length > 6 && (
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="hidden md:flex text-xs font-bold text-[#6C63FF] hover:text-white uppercase tracking-widest transition-all duration-300 hover:scale-105 active:scale-95 px-3 py-1 bg-white/5 hover:bg-white/10 rounded-full border border-white/10"
+            className="hidden md:flex text-[11px] font-semibold text-white/70 hover:text-white uppercase tracking-wider transition-all duration-200 hover:scale-105 active:scale-95 px-3 py-1 bg-white/[0.05] hover:bg-white/[0.1] rounded-full border border-white/10"
           >
             {isExpanded ? "Show less" : "Show all"}
           </button>
@@ -75,9 +76,9 @@ export default function RowAlbums({ title, albums, isLoading, mobileCardSize = "
           {isLoading
             ? Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="flex-shrink-0 snap-start space-y-2" style={{ width: cardSize }}>
-                  <div className="rounded-xl shimmer" style={{ width: cardSize, height: cardSize }} />
-                  <div className="h-3 shimmer rounded w-3/4" />
-                  <div className="h-2.5 shimmer rounded w-1/2" />
+                  <div className="rounded-xl bg-white/[0.03] animate-pulse" style={{ width: cardSize, height: cardSize }} />
+                  <div className="h-3 bg-white/[0.03] rounded w-3/4 animate-pulse" />
+                  <div className="h-2.5 bg-white/[0.03] rounded w-1/2 animate-pulse" />
                 </div>
               ))
             : albums.slice(0, 12).map((album) => (
@@ -89,7 +90,7 @@ export default function RowAlbums({ title, albums, isLoading, mobileCardSize = "
                   style={{ width: cardSize }}
                 >
                   <div
-                    className="relative rounded-xl overflow-hidden bg-[#282828] shadow-lg"
+                    className="relative rounded-xl overflow-hidden bg-[#161722] border border-white/[0.06] shadow-sm"
                     style={{ width: cardSize, height: cardSize }}
                   >
                     {album.image ? (
@@ -103,16 +104,16 @@ export default function RowAlbums({ title, albums, isLoading, mobileCardSize = "
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <Disc size={36} className="text-[#727272]" />
+                        <Disc size={32} className="text-white/30" />
                       </div>
                     )}
-                    <div className="absolute bottom-2 right-2 w-9 h-9 rounded-full bg-[#6C63FF] flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity shadow-lg">
-                      <Play size={14} className="fill-white text-white ml-0.5" />
+                    <div className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-white text-black flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity shadow-md">
+                      <Play size={13} className="fill-black text-black ml-0.5" />
                     </div>
                   </div>
                   <div className="mt-2 pr-1">
                     <p className="text-xs font-semibold truncate text-white">{album.name}</p>
-                    <p className="text-[11px] text-[#B3B3B3] truncate mt-0.5">{album.artist || "Album"}</p>
+                    <p className="text-[11px] text-white/50 truncate mt-0.5">{album.artist || "Album"}</p>
                   </div>
                 </Link>
               ))}
@@ -125,22 +126,22 @@ export default function RowAlbums({ title, albums, isLoading, mobileCardSize = "
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="space-y-3">
-                <div className="aspect-square rounded-xl shimmer" />
-                <div className="h-3.5 shimmer rounded w-3/4" />
-                <div className="h-3 shimmer rounded w-1/2" />
+                <div className="aspect-square rounded-2xl bg-white/[0.03] animate-pulse" />
+                <div className="h-4 bg-white/[0.03] rounded w-3/4 animate-pulse" />
+                <div className="h-3 bg-white/[0.03] rounded w-1/2 animate-pulse" />
               </div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 transition-all duration-300">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
             {(isExpanded ? albums : albums.slice(0, 6)).map((album) => (
               <Link
                 key={album.id}
                 href={getAlbumHref(album.link)}
                 onMouseEnter={() => handlePrefetchAlbum(album.link)}
-                className="playlist-card bg-[#181818] hover:bg-[#282828] p-4 space-y-3 cursor-pointer transition-all duration-200 rounded-xl hover:-translate-y-1 hover:shadow-lg block text-left font-normal"
+                className="playlist-card bg-white/[0.025] hover:bg-white/[0.06] border border-white/[0.06] hover:border-white/20 p-3.5 space-y-3 cursor-pointer transition-all duration-200 rounded-2xl hover:-translate-y-1 hover:shadow-lg hover:shadow-black/50 block text-left font-normal"
               >
-                <div className="relative aspect-square rounded-lg overflow-hidden bg-[#282828] shadow-xl">
+                <div className="relative aspect-square rounded-xl overflow-hidden bg-[#161722] border border-white/[0.06]">
                   {album.image ? (
                     <Image
                       src={album.image}
@@ -152,16 +153,16 @@ export default function RowAlbums({ title, albums, isLoading, mobileCardSize = "
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Disc size={40} className="text-[#727272]" />
+                      <Disc size={36} className="text-white/30" />
                     </div>
                   )}
                   <div className="play-overlay">
-                    <Play size={20} className="fill-white text-white ml-1" />
+                    <Play size={18} className="fill-black text-black ml-0.5" />
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-white truncate">{album.name}</p>
-                  <p className="text-xs text-[#B3B3B3] truncate mt-0.5">{album.artist || "Album"}</p>
+                  <p className="text-xs md:text-sm font-semibold text-white truncate">{album.name}</p>
+                  <p className="text-[10px] md:text-xs text-white/50 truncate mt-0.5">{album.artist || "Album"}</p>
                 </div>
               </Link>
             ))}

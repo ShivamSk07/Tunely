@@ -286,7 +286,7 @@ export default function BottomPlayer() {
         {/* Slim progress bar at very top of mini player */}
         <div className="w-full h-[2px] bg-white/10 flex-shrink-0">
           <div
-            className="h-full bg-gradient-to-r from-[#6C63FF] to-[#FF6584] transition-[width]"
+            className="h-full bg-white transition-[width]"
             style={{ width: `${progressPercent}%` }}
           />
         </div>

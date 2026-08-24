@@ -160,25 +160,27 @@ export default function SongPill({ song, playlistId, onSongSelected }: SongPillP
   return (
     <div 
       onClick={handlePlayClick}
-      className={`group flex items-center justify-between gap-4 p-3 bg-[#12121E] border rounded-xl transition-all duration-300 cursor-pointer purple-glow-hover ${
-        isCurrent ? "active-glow border-[#FF6584]/30" : "border-[#6C63FF22]"
+      className={`group flex items-center justify-between gap-4 p-2.5 sm:p-3 bg-white/[0.025] hover:bg-white/[0.06] border rounded-xl transition-all duration-200 cursor-pointer ${
+        isCurrent
+          ? "border-white/25 bg-white/[0.06] shadow-sm shadow-black/30"
+          : "border-white/[0.06] hover:border-white/20"
       }`}
     >
-      <div className="flex items-center gap-4 min-w-0 flex-1">
+      <div className="flex items-center gap-3.5 min-w-0 flex-1">
         {/* Index or Cover Image */}
-        <div className="relative w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden bg-[#080810] flex items-center justify-center border border-gray-800">
+        <div className="relative w-11 h-11 sm:w-12 sm:h-12 flex-shrink-0 rounded-lg overflow-hidden bg-[#161722] flex items-center justify-center border border-white/[0.06]">
           {song.image ? (
             <img src={song.image} alt={song.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={() => setImgFailed(true)} />
           ) : (
-            <Disc size={20} className="text-[#6C63FF]" />
+            <Disc size={18} className="text-white/30" />
           )}
 
           {/* Hover Overlay Button */}
-          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-200">
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-200">
             {isCurrent && isPlaying ? (
-              <Pause size={18} className="text-white" />
+              <Pause size={16} className="text-white fill-white" />
             ) : (
-              <Play size={18} className="text-white fill-white" />
+              <Play size={16} className="text-white fill-white ml-0.5" />
             )}
           </div>
         </div>
@@ -186,7 +188,7 @@ export default function SongPill({ song, playlistId, onSongSelected }: SongPillP
         {/* Info */}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className={`text-sm font-semibold truncate ${isCurrent ? "text-[#FF6584]" : "text-white"}`}>
+            <span className={`text-sm font-semibold truncate ${isCurrent ? "text-white font-bold" : "text-white/90 group-hover:text-white"}`}>
               {song.name}
             </span>
             {isCurrent && isPlaying && (
@@ -197,28 +199,28 @@ export default function SongPill({ song, playlistId, onSongSelected }: SongPillP
               </div>
             )}
           </div>
-          <span className="text-xs text-gray-400 block truncate group-hover:text-gray-300 transition-colors">
+          <span className="text-xs text-white/50 block truncate group-hover:text-white/70 transition-colors">
             {song.artist}
           </span>
         </div>
       </div>
 
       {/* Track Actions */}
-      <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
         {/* Song duration */}
-        <span className="text-xs text-gray-400 mr-2 hidden sm:inline">
+        <span className="text-xs text-white/40 mr-2 hidden sm:inline tabular-nums">
           {formatTime(song.duration)}
         </span>
 
         {/* Like Button */}
         <button 
           onClick={handleLikeClick}
-          className={`p-2 rounded-lg hover:bg-gray-800/60 transition-all ${
-            isLiked ? "text-[#FF6584]" : "text-gray-400 hover:text-white"
+          className={`p-1.5 rounded-lg hover:bg-white/10 transition-colors ${
+            isLiked ? "text-[#ec4899]" : "text-white/40 hover:text-white"
           }`}
           title={isLiked ? "Unlike Song" : "Like Song"}
         >
-          <Heart size={16} className={isLiked ? "fill-[#FF6584]" : ""} />
+          <Heart size={15} className={isLiked ? "fill-[#ec4899]" : ""} />
         </button>
 
         {/* Remove Button if inside playlist, else let SongContextMenu handle custom add-to-playlist */}
@@ -226,10 +228,10 @@ export default function SongPill({ song, playlistId, onSongSelected }: SongPillP
           <button 
             onClick={handleRemoveClick}
             disabled={removeSongMutation.isPending}
-            className="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-800/60 rounded-lg transition-all"
+            className="p-1.5 text-white/40 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
             title="Remove from Playlist"
           >
-            <Trash2 size={16} />
+            <Trash2 size={15} />
           </button>
         )}
 

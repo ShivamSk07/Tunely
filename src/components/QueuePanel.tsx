@@ -172,31 +172,31 @@ function QueueList({
           <div
             key={`${song.id}-${idx}`}
             onClick={() => onItemClick(song, idx)}
-            className={`group flex items-center gap-3 p-2.5 rounded-xl transition duration-200 cursor-pointer border ${
+            className={`group flex items-center gap-3 p-2 rounded-xl transition duration-150 cursor-pointer border ${
               isCurrent
-                ? "bg-[#6C63FF]/10 border-[#6C63FF]/30 active-glow"
-                : "hover:bg-white/5 border-transparent"
+                ? "bg-white/[0.08] border-white/20 shadow-sm"
+                : "hover:bg-white/[0.04] border-transparent"
             }`}
-            style={{ minHeight: "52px" }}
+            style={{ minHeight: "50px" }}
           >
-            <div className="relative w-10 h-10 rounded-md overflow-hidden bg-gray-900 border border-gray-800 flex-shrink-0 flex items-center justify-center">
+            <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-[#161722] border border-white/[0.06] flex-shrink-0 flex items-center justify-center">
               {song.image ? (
                 <img src={song.image} alt={song.name} className="w-full h-full object-cover" />
               ) : (
-                <Music size={14} className="text-gray-500" />
+                <Music size={14} className="text-white/30" />
               )}
               {isCurrent && (
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                  <Play size={12} className="text-[#FF6584] fill-[#FF6584]" />
+                  <Play size={12} className="text-white fill-white" />
                 </div>
               )}
             </div>
 
             <div className="min-w-0 flex-grow">
-              <p className={`text-xs font-semibold truncate ${isCurrent ? "text-[#FF6584]" : "text-white"}`}>
+              <p className={`text-xs font-semibold truncate ${isCurrent ? "text-white font-bold" : "text-white/90"}`}>
                 {song.name}
               </p>
-              <p className="text-[10px] text-gray-400 truncate">
+              <p className="text-[10px] text-white/50 truncate">
                 {song.artist}
               </p>
             </div>

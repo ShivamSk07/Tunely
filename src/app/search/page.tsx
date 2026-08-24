@@ -133,21 +133,21 @@ function SearchContent() {
   const hasResults = !!(data && ((data.songs?.length ?? 0) > 0 || (data.albums?.length ?? 0) > 0 || (data.artists?.length ?? 0) > 0))
 
   return (
-    <div className="min-h-full pb-36 md:pb-12 bg-gradient-to-b from-[#111118] to-[#0a0a0f]">
+    <div className="min-h-full pb-36 md:pb-12 bg-[#090a0f]">
       {/* Sticky search bar — full width on mobile */}
-      <div className="sticky top-0 z-20 px-4 md:px-6 pt-4 md:pt-8 pb-4 md:pb-6 bg-[#111118]/90 backdrop-blur-xl border-b border-white/5">
+      <div className="sticky top-0 z-20 px-4 md:px-6 pt-4 md:pt-6 pb-4 md:pb-5 bg-[#090a0f]/90 backdrop-blur-xl border-b border-white/[0.06]">
         <div className="relative w-full max-w-2xl mx-auto">
-          <Search size={22} className="absolute left-5 top-1/2 -translate-y-1/2 text-[#727272] pointer-events-none" />
+          <Search size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="What do you want to play?"
-            className="w-full pl-14 pr-6 py-3.5 md:py-4 bg-[#181824]/60 border border-[#6C63FF]/20 text-white placeholder-[#B3B3B3] rounded-full text-base font-semibold outline-none transition-all hover:bg-[#20202e] focus:bg-[#20202e] focus:ring-2 focus:ring-[#6C63FF]/60 focus:border-[#6C63FF]/60 shadow-[0_8px_30px_rgba(0,0,0,0.3)] focus:shadow-[0_0_20px_rgba(108,99,255,0.25)]"
+            className="w-full pl-13 pr-6 py-3 md:py-3.5 bg-white/[0.04] border border-white/10 text-white placeholder-white/40 rounded-full text-sm md:text-base font-medium outline-none transition-all hover:bg-white/[0.06] focus:bg-white/[0.08] focus:border-white/30 focus:ring-1 focus:ring-white/20 shadow-sm"
             autoFocus={!!queryParam}
           />
           {isLoading && (
-            <Loader2 size={20} className="absolute right-5 top-1/2 -translate-y-1/2 text-[#6C63FF] animate-spin" />
+            <Loader2 size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-white/50 animate-spin" />
           )}
         </div>
       </div>
@@ -155,26 +155,23 @@ function SearchContent() {
       {/* Browse categories when no query */}
       {!debouncedQuery && (
         <div className="px-4 md:px-8 pb-8 space-y-4 md:space-y-6">
-          <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">Browse all</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Browse all</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
             {GENRE_CATEGORIES.map((cat) => (
               <div
                 key={cat.label}
                 onClick={() => { setSearchTerm(cat.query); setDebouncedQuery(cat.query) }}
-                className={`group relative overflow-hidden rounded-2xl aspect-[4/3] cursor-pointer shadow-[0_8px_30px_rgba(0,0,0,0.4)] hover:scale-[1.03] transition-all duration-300 border border-white/10 bg-gradient-to-br ${cat.gradient}`}
+                className={`group relative overflow-hidden rounded-2xl aspect-[4/3] cursor-pointer shadow-md hover:scale-[1.02] transition-all duration-200 border border-white/10 bg-gradient-to-br ${cat.gradient}`}
               >
-                {/* Glassmorphic ambient overlay */}
-                <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-300" />
-                
-                {/* Glowing light blob */}
-                <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-white/25 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500 pointer-events-none" />
+                {/* Overlay */}
+                <div className="absolute inset-0 bg-black/15 group-hover:bg-black/5 transition-colors duration-200" />
 
-                {/* Floating, tilted Lucide Icon */}
+                {/* Floating Lucide Icon */}
                 {getGenreIcon(cat.icon)}
 
                 {/* Content */}
                 <div className="absolute inset-0 p-4 flex flex-col justify-between z-10">
-                  <p className="text-base md:text-lg font-black text-white tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+                  <p className="text-base md:text-lg font-bold text-white tracking-tight">
                     {cat.label}
                   </p>
                 </div>
@@ -188,19 +185,19 @@ function SearchContent() {
       {debouncedQuery && (
         <div className="px-4 md:px-6 pb-8 space-y-4 md:space-y-5">
           {/* Filters: Language filter & Content tabs */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/5">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
             {/* Language filter pills */}
             <div className="flex items-center gap-3 overflow-x-auto pb-1 md:pb-0" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
-              <span className="text-[11px] uppercase font-black tracking-widest text-[#727272] select-none pl-1">Language</span>
-              <div className="flex gap-1 bg-[#181822] p-1 rounded-full border border-white/5 flex-shrink-0">
+              <span className="text-[10px] uppercase font-bold tracking-widest text-white/40 select-none pl-1">Language</span>
+              <div className="flex gap-1 bg-white/[0.04] p-1 rounded-full border border-white/[0.06] flex-shrink-0">
                 {(["hindi", "punjabi", "english", "all"] as const).map((lang) => (
                   <button
                     key={lang}
                     onClick={() => setActiveLang(lang)}
-                    className={`px-4 py-1.5 rounded-full text-xs font-black transition-all uppercase whitespace-nowrap tracking-wider ${
+                    className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all uppercase whitespace-nowrap tracking-wider ${
                       activeLang === lang
-                        ? "bg-gradient-to-r from-[#6C63FF] to-[#8C85FF] text-white shadow-lg shadow-[#6C63FF]/30 scale-[1.02]"
-                        : "text-[#B3B3B3] hover:text-white hover:bg-white/5"
+                        ? "bg-white text-black shadow-sm"
+                        : "text-white/60 hover:text-white hover:bg-white/[0.06]"
                     }`}
                   >
                     {lang === "all" ? "All" : lang}

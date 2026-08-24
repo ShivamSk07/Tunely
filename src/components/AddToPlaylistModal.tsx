@@ -111,29 +111,29 @@ export default function AddToPlaylistModal({ song, onClose }: AddToPlaylistModal
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
       <div
-        className="w-full max-w-md bg-[#12121E] border border-[#6C63FF22] rounded-2xl purple-glow overflow-hidden p-6 flex flex-col"
+        className="w-full max-w-md bg-[#12131c] border border-white/10 rounded-2xl shadow-2xl overflow-hidden p-6 flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-4 border-b border-gray-800 pb-3">
+        <div className="flex items-center justify-between mb-4 border-b border-white/[0.06] pb-3">
           <h3 className="text-lg font-bold text-white">Add to Playlist</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
-            <X size={20} />
+          <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">
+            <X size={18} />
           </button>
         </div>
 
         {/* Selected Song Preview */}
-        <div className="flex items-center gap-3 bg-[#080810] p-3 rounded-xl border border-gray-800/40 mb-6">
+        <div className="flex items-center gap-3 bg-white/[0.03] p-3 rounded-xl border border-white/[0.06] mb-6">
           {song.image ? (
             <img src={song.image} alt={song.name} className="w-12 h-12 rounded-lg object-cover" />
           ) : (
-            <div className="w-12 h-12 bg-gray-800 rounded-lg flex items-center justify-center">
-              <Disc size={20} className="text-[#6C63FF]" />
+            <div className="w-12 h-12 bg-white/[0.06] rounded-lg flex items-center justify-center">
+              <Disc size={20} className="text-white/40" />
             </div>
           )}
           <div className="flex-1 overflow-hidden">
             <p className="text-sm font-semibold text-white truncate">{song.name}</p>
-            <p className="text-xs text-gray-400 truncate">{song.artist}</p>
+            <p className="text-xs text-white/40 truncate">{song.artist}</p>
           </div>
         </div>
 
@@ -141,9 +141,9 @@ export default function AddToPlaylistModal({ song, onClose }: AddToPlaylistModal
         {!isCreating ? (
           <button
             onClick={() => setIsCreating(true)}
-            className="flex items-center justify-center gap-2 w-full py-3 mb-4 border border-[#6C63FF44] hover:bg-[#6C63FF11] text-[#6C63FF] hover:text-white rounded-xl transition duration-200 text-sm font-medium"
+            className="flex items-center justify-center gap-2 w-full py-2.5 mb-4 border border-white/10 hover:bg-white/[0.06] text-white rounded-xl transition duration-200 text-xs font-bold uppercase tracking-wider"
           >
-            <Plus size={16} />
+            <Plus size={15} />
             Create New Playlist
           </button>
         ) : (
@@ -151,27 +151,23 @@ export default function AddToPlaylistModal({ song, onClose }: AddToPlaylistModal
             <div className="flex gap-2">
               <input
                 type="text"
+                autoFocus
+                placeholder="Playlist name..."
                 value={newPlaylistName}
                 onChange={(e) => setNewPlaylistName(e.target.value)}
-                placeholder="Playlist name..."
-                required
-                className="flex-1 px-4 py-2 bg-[#080810] border border-gray-800 focus:border-[#6C63FF] outline-none text-white rounded-xl text-sm"
+                className="flex-1 px-4 py-2 bg-white/[0.04] border border-white/10 focus:border-white/30 text-white rounded-xl text-sm outline-none transition"
               />
               <button
                 type="submit"
-                disabled={createPlaylistMutation.isPending}
-                className="px-4 py-2 bg-[#6C63FF] hover:bg-[#574AE2] text-white rounded-xl text-sm font-semibold flex items-center gap-1 disabled:opacity-50"
+                disabled={createPlaylistMutation.isPending || !newPlaylistName.trim()}
+                className="px-4 py-2 bg-white text-black hover:bg-white/90 disabled:opacity-50 text-xs font-bold rounded-xl transition"
               >
-                {createPlaylistMutation.isPending ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  "Create"
-                )}
+                {createPlaylistMutation.isPending ? "..." : "Create"}
               </button>
               <button
                 type="button"
                 onClick={() => setIsCreating(false)}
-                className="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-xl text-sm font-semibold"
+                className="px-3 py-2 bg-white/10 text-white/60 hover:text-white text-xs font-medium rounded-xl transition"
               >
                 Cancel
               </button>

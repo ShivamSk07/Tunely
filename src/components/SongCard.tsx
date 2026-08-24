@@ -127,57 +127,59 @@ export default function SongCard({ song, onSongSelected }: SongCardProps) {
   return (
     <div 
       onClick={handlePlayClick}
-      className={`group relative flex flex-col p-4 bg-[#12121E]/60 border border-[#6C63FF11] rounded-2xl cursor-pointer hover:border-[#6C63FF33] hover:bg-[#12121E]/90 transition-all duration-300 purple-glow-hover ${
-        isCurrent ? "border-[#FF6584]/30 bg-[#12121E]/80 active-glow" : ""
+      className={`group relative flex flex-col p-3.5 md:p-4 bg-white/[0.025] hover:bg-white/[0.06] border rounded-2xl cursor-pointer transition-all duration-200 ${
+        isCurrent
+          ? "border-white/25 bg-white/[0.06] shadow-md shadow-black/40"
+          : "border-white/[0.07] hover:border-white/20 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/50"
       }`}
     >
       {/* Cover Image */}
-      <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-[#080810] border border-gray-800 flex items-center justify-center">
+      <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-[#161722] border border-white/[0.06] flex items-center justify-center">
         {song.image ? (
           <img 
             src={song.image} 
             alt={song.name} 
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
             onError={() => setImgFailed(true)}
           />
         ) : (
-          <Disc size={40} className="text-[#6C63FF] animate-pulse" />
+          <Disc size={36} className="text-white/30" />
         )}
 
         {/* Hover circular overlay glassmorphism play button */}
-        <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-300">
-          <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-full border border-white/20 flex items-center justify-center text-white scale-75 group-hover:scale-100 transition-all duration-300 shadow-lg hover:scale-105 hover:bg-[#6C63FF] hover:border-[#6C63FF]">
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-200">
+          <div className="w-11 h-11 bg-white text-black rounded-full flex items-center justify-center scale-90 group-hover:scale-100 transition-all duration-200 shadow-lg hover:scale-105 active:scale-95">
             {isCurrent && isPlaying ? (
-              <Pause size={20} className="fill-white text-white" />
+              <Pause size={18} className="fill-black text-black" />
             ) : (
-              <Play size={20} className="fill-white ml-0.5 text-white" />
+              <Play size={18} className="fill-black ml-0.5 text-black" />
             )}
           </div>
         </div>
 
         {/* Floating Actions on Cover hover (Top Right) */}
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-1.5 z-10">
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1.5 z-10">
           <button 
             onClick={handleLikeClick}
-            className={`w-8 h-8 rounded-lg bg-black/60 hover:bg-black/90 flex items-center justify-center border border-white/10 transition-colors ${
-              isLiked ? "text-[#FF6584]" : "text-gray-300 hover:text-white"
+            className={`w-7 h-7 rounded-lg bg-black/70 hover:bg-black/90 flex items-center justify-center border border-white/10 transition-colors ${
+              isLiked ? "text-[#ec4899]" : "text-gray-300 hover:text-white"
             }`}
             title={isLiked ? "Unlike" : "Like"}
           >
-            <Heart size={14} className={isLiked ? "fill-[#FF6584]" : ""} />
+            <Heart size={13} className={isLiked ? "fill-[#ec4899]" : ""} />
           </button>
           
           <div onClick={(e) => e.stopPropagation()}>
-            <SongContextMenu song={song} className="w-8 h-8 bg-black/60 hover:bg-black/90 rounded-lg flex items-center justify-center border border-white/10" />
+            <SongContextMenu song={song} className="w-7 h-7 bg-black/70 hover:bg-black/90 rounded-lg flex items-center justify-center border border-white/10 text-white/80 hover:text-white" />
           </div>
         </div>
       </div>
 
       {/* Info details */}
-      <div className="mt-4 space-y-1 min-w-0">
+      <div className="mt-3.5 space-y-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <span className={`text-sm font-semibold truncate block flex-1 ${
-            isCurrent ? "text-[#FF6584]" : "text-white group-hover:text-[#6C63FF] transition-colors"
+            isCurrent ? "text-white font-bold" : "text-white/90 group-hover:text-white transition-colors"
           }`}>
             {song.name}
           </span>
@@ -195,7 +197,7 @@ export default function SongCard({ song, onSongSelected }: SongCardProps) {
           </div>
         </div>
         
-        <span className="text-xs text-gray-400 truncate block group-hover:text-gray-300 transition-colors">
+        <span className="text-xs text-white/50 truncate block group-hover:text-white/70 transition-colors">
           {song.artist}
         </span>
       </div>

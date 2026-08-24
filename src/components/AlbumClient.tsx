@@ -198,19 +198,18 @@ export default function AlbumClient({ link }: { link: string }) {
             <div className="flex items-center justify-center md:justify-start gap-3 pt-2">
               <button
                 onClick={() => handlePlayAll(false)}
-                className="flex items-center gap-2 px-6 py-3 bg-[#6C63FF] hover:bg-[#6C63FF]/90 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition duration-200 purple-glow hover:scale-[1.02] active:scale-[0.98]"
+                className="flex items-center gap-2 px-6 py-2.5 bg-white text-black hover:bg-white/90 text-xs font-bold uppercase tracking-wider rounded-full transition duration-200 shadow-sm hover:scale-[1.02] active:scale-[0.98]"
               >
-                <Play size={15} className="fill-white" />
+                <Play size={14} className="fill-black" />
                 Play All
               </button>
               <button
                 onClick={() => handlePlayAll(true)}
-                className="flex items-center gap-2 px-5 py-3 bg-[#12121E] hover:bg-gray-800 text-gray-300 hover:text-white text-xs font-bold uppercase tracking-wider rounded-xl border border-gray-800 transition duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                className="flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/15 text-white text-xs font-bold uppercase tracking-wider rounded-full border border-white/10 transition duration-200 hover:scale-[1.02] active:scale-[0.98]"
               >
-                <Shuffle size={15} />
+                <Shuffle size={14} />
                 Shuffle
               </button>
-
             </div>
           </div>
         </div>

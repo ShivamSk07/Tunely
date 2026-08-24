@@ -53,7 +53,7 @@ export default function SectionRow({ title, children, seeAllHref }: SectionRowPr
     <div className="relative group/row space-y-4 select-none">
       {/* Header Container */}
       <div className="flex items-center justify-between px-4 md:px-6">
-        <h3 className="text-lg md:text-2xl font-black text-white tracking-tight hover:text-[#6C63FF] transition-colors cursor-pointer">
+        <h3 className="text-lg md:text-2xl font-bold text-white tracking-tight hover:text-white/80 transition-colors cursor-pointer">
           {title}
         </h3>
         
@@ -61,7 +61,7 @@ export default function SectionRow({ title, children, seeAllHref }: SectionRowPr
         {seeAllHref && (
           <button
             onClick={handleSeeAllClick}
-            className="text-xs font-bold text-[#6C63FF] hover:text-white uppercase tracking-widest transition-all duration-300 hover:scale-105 active:scale-95 px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-full border border-white/10"
+            className="text-[11px] font-semibold text-white/70 hover:text-white uppercase tracking-wider transition-all duration-200 hover:scale-105 active:scale-95 px-3 py-1 bg-white/[0.05] hover:bg-white/[0.1] rounded-full border border-white/10"
           >
             See All
           </button>
@@ -74,10 +74,10 @@ export default function SectionRow({ title, children, seeAllHref }: SectionRowPr
         {showLeftArrow && (
           <button
             onClick={() => scroll("left")}
-            className="hidden md:flex absolute left-8 top-1/2 -translate-y-1/2 z-10 w-10 h-10 items-center justify-center bg-[#12121E]/80 border border-[#6C63FF]/20 hover:bg-[#6C63FF] hover:border-[#6C63FF] text-white rounded-full shadow-[0_0_15px_rgba(0,0,0,0.6)] backdrop-blur-md opacity-0 group-hover/row:opacity-100 transition-all duration-300 hover:scale-105 active:scale-95"
+            className="hidden md:flex absolute left-8 top-1/2 -translate-y-1/2 z-10 w-9 h-9 items-center justify-center bg-black/80 border border-white/15 hover:bg-white hover:text-black text-white rounded-full shadow-lg backdrop-blur-md opacity-0 group-hover/row:opacity-100 transition-all duration-200 hover:scale-105 active:scale-95"
             aria-label="Scroll left"
           >
-            <ChevronLeft size={20} />
+            <ChevronLeft size={18} />
           </button>
         )}
 
@@ -85,10 +85,10 @@ export default function SectionRow({ title, children, seeAllHref }: SectionRowPr
         {showRightArrow && (
           <button
             onClick={() => scroll("right")}
-            className="hidden md:flex absolute right-8 top-1/2 -translate-y-1/2 z-10 w-10 h-10 items-center justify-center bg-[#12121E]/80 border border-[#6C63FF]/20 hover:bg-[#6C63FF] hover:border-[#6C63FF] text-white rounded-full shadow-[0_0_15px_rgba(0,0,0,0.6)] backdrop-blur-md opacity-0 group-hover/row:opacity-100 transition-all duration-300 hover:scale-105 active:scale-95"
+            className="hidden md:flex absolute right-8 top-1/2 -translate-y-1/2 z-10 w-9 h-9 items-center justify-center bg-black/80 border border-white/15 hover:bg-white hover:text-black text-white rounded-full shadow-lg backdrop-blur-md opacity-0 group-hover/row:opacity-100 transition-all duration-200 hover:scale-105 active:scale-95"
             aria-label="Scroll right"
           >
-            <ChevronRight size={20} />
+            <ChevronRight size={18} />
           </button>
         )}
 
