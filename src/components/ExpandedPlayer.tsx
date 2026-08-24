@@ -440,8 +440,20 @@ export default function ExpandedPlayer() {
             <Volume2 size={18} className="text-white/40" />
           </div>
 
-          {/* Bottom row: Lyrics / Queue / Add */}
+          {/* Bottom row: Jam / Lyrics / Queue / Add */}
           <div className="flex items-center justify-around pb-2">
+            <button
+              onClick={() => {
+                setExpandedPlayerOpen(false)
+                import("@/store/useJamStore").then(({ useJamStore }) => {
+                  useJamStore.getState().setJamModalOpen(true)
+                })
+              }}
+              className="flex flex-col items-center gap-1 text-white/40 hover:text-white transition-colors min-w-[44px] min-h-[44px] justify-center"
+            >
+              <Radio size={20} />
+              <span className="text-[10px] font-medium">Jam</span>
+            </button>
             <button
               onClick={() => { setExpandedPlayerOpen(false); setTimeout(() => toggleLyrics(), 200) }}
               className="flex flex-col items-center gap-1 text-white/40 hover:text-white transition-colors min-w-[44px] min-h-[44px] justify-center"

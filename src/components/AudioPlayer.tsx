@@ -141,6 +141,16 @@ export default function AudioPlayer() {
     } else {
       audioRef.current.pause()
     }
+
+    // Broadcast host playback state to Jam room listeners
+    if (currentSong) {
+      import("@/lib/jamManager").then(({ jamManager }) => {
+        jamManager.broadcast({
+          type: isPlaying ? "PLAY" : "PAUSE",
+          timestamp: Date.now(),
+        })
+      })
+    }
   }, [isPlaying, currentSong, setIsPlaying])
 
   // Sync Volume
@@ -149,12 +159,20 @@ export default function AudioPlayer() {
     audioRef.current.volume = volume
   }, [volume])
 
-  // Handle manual seeking from store
+  // Handle manual seeking from store & broadcast to Jam
   useEffect(() => {
     if (!audioRef.current) return
     const diff = Math.abs(audioRef.current.currentTime - currentTime)
     if (diff > 1.5) {
       audioRef.current.currentTime = currentTime
+
+      import("@/lib/jamManager").then(({ jamManager }) => {
+        jamManager.broadcast({
+          type: "SEEK",
+          time: currentTime,
+          timestamp: Date.now(),
+        })
+      })
     }
   }, [currentTime])
 

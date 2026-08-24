@@ -13,6 +13,8 @@ import toast from "react-hot-toast"
 import { ShareModal } from "@/components/ShareLyrics"
 import { SleepTimer } from "@/components/SettingsPanels"
 
+import { useJamStore } from "@/store/useJamStore"
+
 type ActiveModal = null | "share" | "lyrics" | "sleep"
 
 export default function BottomPlayer() {
@@ -256,6 +258,17 @@ export default function BottomPlayer() {
                 <span className="eq-bar-3" /><span className="eq-bar-4" />
               </div>
             )}
+
+            {/* Jam Session Button */}
+            <button
+              onClick={() => useJamStore.getState().setJamModalOpen(true)}
+              title="Tunely Jam - Real-time Listen Along"
+              className={`p-2 rounded-lg transition-all relative ${
+                useJamStore.getState().isInJam ? "text-white bg-white/10" : "text-white/40 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <Radio size={16} className={useJamStore.getState().isInJam ? "text-white animate-pulse" : ""} />
+            </button>
 
             {/* Lyrics Button */}
             <button

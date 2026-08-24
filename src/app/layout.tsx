@@ -17,6 +17,9 @@ import ExpandedPlayer from "@/components/ExpandedPlayer"
 import InitialPageLoader from "@/components/InitialPageLoader"
 import KeyboardShortcuts from "@/components/KeyboardShortcuts"
 import NextTopLoader from "nextjs-toploader"
+import JamModal from "@/components/JamModal"
+import JamBanner from "@/components/JamBanner"
+import JamUrlListener from "@/components/JamUrlListener"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -111,6 +114,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
             {/* Event-driven modals (auth, add-to-playlist) */}
             <GlobalModalWrapper />
+
+            {/* Tunely Jam modal & floating pill */}
+            <JamBanner />
+            <JamModal />
+            <JamUrlListener />
 
             {/* Offline PWA Service Worker */}
             <ServiceWorkerRegistrar />

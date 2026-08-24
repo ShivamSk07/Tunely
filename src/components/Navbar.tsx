@@ -3,8 +3,9 @@
 import React from "react"
 import { useRouter } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
-import { ChevronLeft, ChevronRight, LogOut, Bell } from "lucide-react"
+import { ChevronLeft, ChevronRight, LogOut, Bell, Radio } from "lucide-react"
 import { usePlayerStore } from "@/store/usePlayerStore"
+import { useJamStore } from "@/store/useJamStore"
 import Logo from "@/components/Logo"
 import Link from "next/link"
 
@@ -12,6 +13,8 @@ export default function Navbar() {
   const router = useRouter()
   const { data: session } = useSession()
   const setAuthModalOpen = usePlayerStore((state) => state.setAuthModalOpen)
+  const setJamModalOpen = useJamStore((state) => state.setJamModalOpen)
+  const isInJam = useJamStore((state) => state.isInJam)
 
   const handleAuthClick = () => {
     if (session) signOut({ callbackUrl: "/" })
@@ -29,7 +32,7 @@ export default function Navbar() {
           <span className="text-lg font-black tracking-tight text-white">Tunely</span>
         </Link>
 
-        {/* Back/Forward navigation (hidden on very small screens to save space if needed, but we'll keep them) */}
+        {/* Back/Forward navigation */}
         <div className="hidden md:flex items-center gap-2">
           <button
             onClick={() => router.back()}
@@ -46,8 +49,21 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Right: Auth */}
+      {/* Right: Jam Button + Auth */}
       <div className="flex items-center gap-2 sm:gap-3">
+        {/* Tunely Jam Trigger Button */}
+        <button
+          onClick={() => setJamModalOpen(true)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all hover:scale-105 active:scale-95 shadow-sm ${
+            isInJam
+              ? "bg-white text-black border-white"
+              : "bg-white/[0.04] hover:bg-white/[0.08] text-white/80 hover:text-white border-white/[0.08]"
+          }`}
+          title="Tunely Jam - Sync listening session"
+        >
+          <Radio size={13} className={isInJam ? "text-black animate-pulse" : "text-white/60"} />
+          <span className="hidden sm:inline">Jam</span>
+        </button>
         {session?.user ? (
           <div className="flex items-center gap-2">
             <button className="w-9 h-9 rounded-full bg-[#282828] flex items-center justify-center text-[#B3B3B3] hover:text-white transition-colors">
