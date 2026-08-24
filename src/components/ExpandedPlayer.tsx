@@ -218,18 +218,18 @@ export default function ExpandedPlayer() {
           <div className="w-full md:w-1/2 flex flex-col justify-center space-y-6 md:space-y-8">
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full bg-[#6C63FF]/15 border border-[#6C63FF]/30 text-[9px] font-extrabold text-[#8B85FF] uppercase tracking-widest flex items-center gap-1">
-                  <Sparkles size={9} className="animate-pulse" /> Tunely HD
+                <span className="px-2.5 py-0.5 rounded-full bg-white/10 border border-white/10 text-[9px] font-bold text-white uppercase tracking-widest flex items-center gap-1">
+                  Tunely HD
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-extrabold text-white/50 uppercase tracking-widest">
+                <span className="px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-bold text-white/50 uppercase tracking-widest">
                   320kbps AAC
                 </span>
               </div>
               <div className="space-y-1">
-                <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white leading-none tracking-tight truncate drop-shadow-md">
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white leading-none tracking-tight truncate">
                   {currentSong.name}
                 </h2>
-                <p className="text-base sm:text-lg font-bold text-[#FF6584] uppercase tracking-wider">
+                <p className="text-base sm:text-lg font-semibold text-white/60">
                   {currentSong.artist}
                 </p>
               </div>
@@ -237,22 +237,22 @@ export default function ExpandedPlayer() {
 
             <div className="grid grid-cols-3 gap-3 pt-4 border-t border-white/5">
               <div className="flex flex-col justify-center text-xs text-white/70 bg-white/[0.02] hover:bg-white/[0.04] p-3 rounded-xl border border-white/5 transition-colors">
-                <span className="text-[8px] uppercase tracking-widest text-white/30 font-extrabold flex items-center gap-1 mb-1">
-                  <Calendar size={10} className="text-[#6C63FF]" /> Year
+                <span className="text-[8px] uppercase tracking-widest text-white/30 font-bold flex items-center gap-1 mb-1">
+                  <Calendar size={10} className="text-white/40" /> Year
                 </span>
                 <span className="font-bold text-white">{currentSong.year || "N/A"}</span>
               </div>
               <div className="flex flex-col justify-center text-xs text-white/70 bg-white/[0.02] hover:bg-white/[0.04] p-3 rounded-xl border border-white/5 transition-colors">
-                <span className="text-[8px] uppercase tracking-widest text-white/30 font-extrabold flex items-center gap-1 mb-1">
-                  <Globe size={10} className="text-[#FF6584]" /> Plays
+                <span className="text-[8px] uppercase tracking-widest text-white/30 font-bold flex items-center gap-1 mb-1">
+                  <Globe size={10} className="text-white/40" /> Plays
                 </span>
                 <span className="font-bold text-white">
                   {typeof currentSong.playCount === 'number' ? currentSong.playCount.toLocaleString() : currentSong.playCount || "N/A"}
                 </span>
               </div>
               <div className="flex flex-col justify-center text-xs text-white/70 bg-white/[0.02] hover:bg-white/[0.04] p-3 rounded-xl border border-white/5 transition-colors">
-                <span className="text-[8px] uppercase tracking-widest text-white/30 font-extrabold flex items-center gap-1 mb-1">
-                  <Clock size={10} className="text-[#6C63FF]" /> Length
+                <span className="text-[8px] uppercase tracking-widest text-white/30 font-bold flex items-center gap-1 mb-1">
+                  <Clock size={10} className="text-white/40" /> Length
                 </span>
                 <span className="font-bold text-white">{formatTime(duration)}</span>
               </div>
@@ -261,13 +261,13 @@ export default function ExpandedPlayer() {
             <div className="space-y-6">
               <div className="space-y-2">
                 <div className="relative w-full h-1.5 group cursor-pointer">
-                  <div className="absolute inset-0 rounded-full bg-white/10" />
-                  <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#6C63FF] to-[#FF6584]" style={{ width: `${progressPercent}%` }} />
+                  <div className="absolute inset-0 rounded-full bg-white/10 group-hover:bg-white/20 transition-colors" />
+                  <div className="absolute inset-y-0 left-0 rounded-full bg-white transition-colors" style={{ width: `${progressPercent}%` }} />
                   <input type="range" min={0} max={duration || 100} value={currentTime}
                     onChange={(e) => seek(parseFloat(e.target.value))}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                 </div>
-                <div className="flex items-center justify-between text-[10px] text-white/40 font-black tracking-widest">
+                <div className="flex items-center justify-between text-[10px] text-white/40 font-bold tracking-widest">
                   <span>{formatTime(currentTime)}</span>
                   <span>{formatTime(duration)}</span>
                 </div>
@@ -276,17 +276,17 @@ export default function ExpandedPlayer() {
               <div className="flex items-center justify-between sm:justify-center gap-4 sm:gap-8">
                 <button onClick={handleLikeClick}
                   className={`w-12 h-12 rounded-full flex items-center justify-center transition-all border border-white/5 hover:scale-105 active:scale-95 ${
-                    isLiked ? "bg-[#6C63FF]/15 border-[#6C63FF]/30 text-[#6C63FF]" : "bg-white/5 text-white/60 hover:text-white hover:bg-white/10"
+                    isLiked ? "bg-white/15 border-white/30 text-white" : "bg-white/5 text-white/60 hover:text-white hover:bg-white/10"
                   }`}>
-                  <Heart size={20} className={isLiked ? "fill-[#6C63FF]" : ""} />
+                  <Heart size={20} className={isLiked ? "fill-white text-white" : ""} />
                 </button>
                 <button onClick={prev}
                   className="w-14 h-14 rounded-full bg-white/5 hover:bg-white/10 text-white flex items-center justify-center border border-white/5 hover:scale-105 active:scale-95 transition-all">
                   <SkipBack size={22} />
                 </button>
                 <button onClick={handlePlayPause}
-                  className="w-20 h-20 rounded-full bg-white text-black flex items-center justify-center hover:scale-[1.04] active:scale-95 transition-all shadow-[0_12px_35px_rgba(255,255,255,0.15)]">
-                  {isPlaying ? <Pause size={28} className="fill-black text-black" /> : <Play size={28} className="fill-black text-black ml-1.5" />}
+                  className="w-18 h-18 rounded-full bg-white text-black flex items-center justify-center hover:scale-[1.04] active:scale-95 transition-all shadow-xl">
+                  {isPlaying ? <Pause size={26} className="fill-black text-black" /> : <Play size={26} className="fill-black text-black ml-1" />}
                 </button>
                 <button onClick={next}
                   className="w-14 h-14 rounded-full bg-white/5 hover:bg-white/10 text-white flex items-center justify-center border border-white/5 hover:scale-105 active:scale-95 transition-all">
@@ -304,7 +304,7 @@ export default function ExpandedPlayer() {
                 </button>
                 <div className="relative flex-1 h-1 group cursor-pointer">
                   <div className="absolute inset-0 rounded-full bg-white/10" />
-                  <div className="absolute inset-y-0 left-0 rounded-full bg-[#6C63FF]" style={{ width: `${volumePercent}%` }} />
+                  <div className="absolute inset-y-0 left-0 rounded-full bg-white" style={{ width: `${volumePercent}%` }} />
                   <input type="range" min={0} max={1} step={0.01}
                     value={isMuted ? 0 : volume}
                     onChange={(e) => { setVolume(parseFloat(e.target.value)); if (isMuted && parseFloat(e.target.value) > 0) setIsMuted(false) }}
@@ -325,45 +325,42 @@ export default function ExpandedPlayer() {
           {/* Cover art */}
           <div className="flex justify-center">
             <div
-              className={`relative rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.8)] border border-white/10 transition-all duration-700 ${
-                isPlaying ? "scale-100" : "scale-[0.95]"
+              className={`relative rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.8)] border border-white/10 transition-all duration-500 ${
+                isPlaying ? "scale-100" : "scale-[0.96]"
               }`}
               style={{ width: "min(72vw, 280px)", height: "min(72vw, 280px)" }}
             >
               <img
                 src={currentSong.image}
                 alt={currentSong.name}
-                className={`w-full h-full object-cover transition-transform duration-[4000ms] ${
-                  isPlaying ? "scale-105" : "scale-100"
-                }`}
+                className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
-              {isPlaying && <div className="absolute inset-0 rounded-2xl border-2 border-[#6C63FF]/30 animate-pulse" />}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
             </div>
           </div>
 
           {/* Song info row */}
           <div className="flex items-center justify-between">
             <div className="min-w-0 flex-1 pr-4">
-              <h2 className="text-[22px] font-black text-white leading-tight truncate">{currentSong.name}</h2>
-              <p className="text-sm text-white/60 font-medium truncate mt-0.5">{currentSong.artist}</p>
+              <h2 className="text-[20px] font-bold text-white leading-tight truncate">{currentSong.name}</h2>
+              <p className="text-sm text-white/50 font-medium truncate mt-0.5">{currentSong.artist}</p>
             </div>
             <button
               onClick={handleLikeClick}
               className={`w-11 h-11 flex items-center justify-center rounded-full flex-shrink-0 transition-all active:scale-90 ${
-                isLiked ? "text-[#6C63FF]" : "text-white/40"
+                isLiked ? "text-white" : "text-white/40"
               }`}
             >
-              <Heart size={22} className={isLiked ? "fill-[#6C63FF]" : ""} />
+              <Heart size={22} className={isLiked ? "fill-white text-white" : ""} />
             </button>
           </div>
 
           {/* Progress bar */}
           <div className="space-y-2">
-            <div className="relative w-full h-1 cursor-pointer" style={{ height: "4px" }}>
+            <div className="relative w-full cursor-pointer" style={{ height: "4px" }}>
               <div className="absolute inset-0 rounded-full bg-white/15" />
               <div
-                className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#6C63FF] to-[#FF6584]"
+                className="absolute inset-y-0 left-0 rounded-full bg-white"
                 style={{ width: `${progressPercent}%` }}
               />
               <input
@@ -386,39 +383,41 @@ export default function ExpandedPlayer() {
           <div className="flex items-center justify-between">
             <button
               onClick={() => setIsShuffled(!isShuffled)}
-              className={`w-11 h-11 flex items-center justify-center transition-all active:scale-90 ${
-                isShuffled ? "text-[#6C63FF]" : "text-white/40"
+              className={`w-11 h-11 flex items-center justify-center transition-all active:scale-90 relative ${
+                isShuffled ? "text-white" : "text-white/40"
               }`}
             >
               <Shuffle size={20} />
+              {isShuffled && <span className="absolute bottom-1 w-1 h-1 bg-white rounded-full" />}
             </button>
             <button
               onClick={prev}
-              className="w-11 h-11 flex items-center justify-center text-white active:scale-90 transition-transform"
+              className="w-11 h-11 flex items-center justify-center text-white/80 active:scale-90 transition-transform"
             >
-              <SkipBack size={26} />
+              <SkipBack size={24} />
             </button>
             <button
               onClick={handlePlayPause}
-              className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center shadow-lg active:scale-95 transition-transform"
+              className="w-15 h-15 rounded-full bg-white text-black flex items-center justify-center shadow-lg active:scale-95 transition-transform"
             >
               {isPlaying
                 ? <Pause size={24} className="fill-black text-black" />
-                : <Play size={24} className="fill-black text-black ml-1" />}
+                : <Play size={24} className="fill-black text-black ml-0.5" />}
             </button>
             <button
               onClick={next}
-              className="w-11 h-11 flex items-center justify-center text-white active:scale-90 transition-transform"
+              className="w-11 h-11 flex items-center justify-center text-white/80 active:scale-90 transition-transform"
             >
-              <SkipForward size={26} />
+              <SkipForward size={24} />
             </button>
             <button
               onClick={() => setRepeatMode(m => m === "off" ? "all" : m === "all" ? "one" : "off")}
-              className={`w-11 h-11 flex items-center justify-center transition-all active:scale-90 ${
-                repeatMode !== "off" ? "text-[#6C63FF]" : "text-white/40"
+              className={`w-11 h-11 flex items-center justify-center transition-all active:scale-90 relative ${
+                repeatMode !== "off" ? "text-white" : "text-white/40"
               }`}
             >
               {repeatMode === "one" ? <Repeat1 size={20} /> : <Repeat size={20} />}
+              {repeatMode !== "off" && <span className="absolute bottom-1 w-1 h-1 bg-white rounded-full" />}
             </button>
           </div>
 
@@ -429,7 +428,7 @@ export default function ExpandedPlayer() {
             </button>
             <div className="relative flex-1 cursor-pointer" style={{ height: "4px" }}>
               <div className="absolute inset-0 rounded-full bg-white/10" />
-              <div className="absolute inset-y-0 left-0 rounded-full bg-[#6C63FF]" style={{ width: `${volumePercent}%` }} />
+              <div className="absolute inset-y-0 left-0 rounded-full bg-white" style={{ width: `${volumePercent}%` }} />
               <input
                 type="range" min={0} max={1} step={0.01}
                 value={isMuted ? 0 : volume}
@@ -441,28 +440,28 @@ export default function ExpandedPlayer() {
             <Volume2 size={18} className="text-white/40" />
           </div>
 
-          {/* Bottom row: Lyrics / Queue / Share */}
+          {/* Bottom row: Lyrics / Queue / Add */}
           <div className="flex items-center justify-around pb-2">
             <button
               onClick={() => { setExpandedPlayerOpen(false); setTimeout(() => toggleLyrics(), 200) }}
               className="flex flex-col items-center gap-1 text-white/40 hover:text-white transition-colors min-w-[44px] min-h-[44px] justify-center"
             >
               <Mic size={20} />
-              <span className="text-[10px] font-semibold">Lyrics</span>
+              <span className="text-[10px] font-medium">Lyrics</span>
             </button>
             <button
               onClick={() => { setExpandedPlayerOpen(false); setTimeout(() => setQueueOpen(!isQueueOpen), 200) }}
               className="flex flex-col items-center gap-1 text-white/40 hover:text-white transition-colors min-w-[44px] min-h-[44px] justify-center"
             >
               <ListMusic size={20} />
-              <span className="text-[10px] font-semibold">Queue</span>
+              <span className="text-[10px] font-medium">Queue</span>
             </button>
             <button
               onClick={handleAddToPlaylist}
               className="flex flex-col items-center gap-1 text-white/40 hover:text-white transition-colors min-w-[44px] min-h-[44px] justify-center"
             >
               <Share2 size={20} />
-              <span className="text-[10px] font-semibold">Add</span>
+              <span className="text-[10px] font-medium">Add</span>
             </button>
           </div>
         </div>
