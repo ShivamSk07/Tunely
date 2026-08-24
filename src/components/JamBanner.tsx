@@ -15,7 +15,7 @@ export default function JamBanner() {
       className="fixed top-20 right-4 sm:right-6 z-40 flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-[#12131c]/95 border border-white/10 backdrop-blur-xl shadow-2xl cursor-pointer hover:border-white/20 transition-all active:scale-95 select-none"
     >
       <div className="flex items-center gap-1.5">
-        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
         <Radio size={13} className="text-white" />
       </div>
 

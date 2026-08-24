@@ -133,7 +133,7 @@ export default function JamModal() {
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] uppercase font-bold tracking-wider text-white/40">Room Code</span>
                   <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                     <span className="text-xs font-semibold text-emerald-400">Live Sync</span>
                   </div>
                 </div>

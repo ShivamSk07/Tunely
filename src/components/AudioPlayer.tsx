@@ -142,15 +142,17 @@ export default function AudioPlayer() {
       audioRef.current.pause()
     }
 
-    // Broadcast host playback state to Jam room listeners
-    if (currentSong) {
-      import("@/lib/jamManager").then(({ jamManager }) => {
-        jamManager.broadcast({
-          type: isPlaying ? "PLAY" : "PAUSE",
-          timestamp: Date.now(),
+    // Broadcast play/pause to Jam listeners (only when we are the Host)
+    import("@/store/useJamStore").then(({ useJamStore }) => {
+      if (currentSong && useJamStore.getState().isHost) {
+        import("@/lib/jamManager").then(({ jamManager }) => {
+          jamManager.broadcast({
+            type: isPlaying ? "PLAY" : "PAUSE",
+            timestamp: Date.now(),
+          })
         })
-      })
-    }
+      }
+    })
   }, [isPlaying, currentSong, setIsPlaying])
 
   // Sync Volume
@@ -159,20 +161,15 @@ export default function AudioPlayer() {
     audioRef.current.volume = volume
   }, [volume])
 
-  // Handle manual seeking from store & broadcast to Jam
+  // Handle manual seeking from store
+  // NOTE: Jam seek broadcasts happen via jamManager.broadcast() called from player UI seek handler,
+  // not here — this effect fires at 60fps via currentTime updates which would spam the network.
   useEffect(() => {
     if (!audioRef.current) return
     const diff = Math.abs(audioRef.current.currentTime - currentTime)
-    if (diff > 1.5) {
+    // Only apply if drift > 3s (manual seek or Jam sync correction)
+    if (diff > 3) {
       audioRef.current.currentTime = currentTime
-
-      import("@/lib/jamManager").then(({ jamManager }) => {
-        jamManager.broadcast({
-          type: "SEEK",
-          time: currentTime,
-          timestamp: Date.now(),
-        })
-      })
     }
   }, [currentTime])
 

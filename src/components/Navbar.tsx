@@ -61,7 +61,7 @@ export default function Navbar() {
           }`}
           title="Tunely Jam - Sync listening session"
         >
-          <Radio size={13} className={isInJam ? "text-black animate-pulse" : "text-white/60"} />
+          <Radio size={13} className="text-white/70" />
           <span className="hidden sm:inline">Jam</span>
         </button>
         {session?.user ? (

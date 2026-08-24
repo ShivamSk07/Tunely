@@ -9,11 +9,10 @@ import {
   Repeat1, Share2, Mic, Timer, X, Radio
 } from "lucide-react"
 import { usePlayerStore } from "@/store/usePlayerStore"
+import { useJamStore } from "@/store/useJamStore"
 import toast from "react-hot-toast"
 import { ShareModal } from "@/components/ShareLyrics"
 import { SleepTimer } from "@/components/SettingsPanels"
-
-import { useJamStore } from "@/store/useJamStore"
 
 type ActiveModal = null | "share" | "lyrics" | "sleep"
 
@@ -33,9 +32,10 @@ export default function BottomPlayer() {
     isRadioMode, setExpandedPlayerOpen,
   } = usePlayerStore()
 
-  interface LikedSongItem {
-    songId: string
-  }
+  const isInJam = useJamStore((s) => s.isInJam)
+  const setJamModalOpen = useJamStore((s) => s.setJamModalOpen)
+
+  interface LikedSongItem { songId: string }
 
   const { data: likedSongs } = useQuery<LikedSongItem[]>({
     queryKey: ["likedSongs"],
@@ -89,7 +89,6 @@ export default function BottomPlayer() {
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
   const volumePercent = (isMuted ? 0 : volume) * 100
-
   const toggleModal = (m: ActiveModal) => setActiveModal(prev => prev === m ? null : m)
 
   return (
@@ -114,13 +113,16 @@ export default function BottomPlayer() {
         </div>
       )}
 
-      {/* ── DESKTOP MAIN PLAYER (Spotify-inspired Obsidian Theme) ── */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 select-none hidden md:block" style={{ height: "var(--player-height)" }}>
-        {/* Top Hairline Track Progress Bar */}
-        <div className="relative w-full group/scrubber cursor-pointer" style={{ height: "3px" }}>
-          <div className="absolute inset-0 bg-white/10 group-hover/scrubber:h-[5px] transition-all" />
+      {/* ── DESKTOP MAIN PLAYER ── */}
+      <div
+        className="fixed bottom-0 left-0 right-0 z-50 select-none hidden md:flex flex-col"
+        style={{ height: "var(--player-height, 72px)" }}
+      >
+        {/* Top hairline progress bar */}
+        <div className="relative w-full flex-shrink-0 group/scrubber cursor-pointer" style={{ height: "3px" }}>
+          <div className="absolute inset-0 bg-white/10" />
           <div
-            className="absolute inset-y-0 left-0 bg-white group-hover/scrubber:h-[5px] transition-all"
+            className="absolute inset-y-0 left-0 bg-white"
             style={{ width: `${progressPercent}%` }}
           />
           <input
@@ -130,99 +132,88 @@ export default function BottomPlayer() {
           />
         </div>
 
-        {/* Player Body */}
+        {/* Player body — strictly fills remaining height, no overflow */}
         <div
-          className="flex items-center px-4 sm:px-6 gap-4"
+          className="flex items-center px-4 sm:px-6 gap-4 flex-1 min-h-0 overflow-hidden"
           style={{
-            height: "calc(var(--player-height) - 3px)",
             background: "rgba(9, 10, 15, 0.98)",
-            borderTop: "1px solid rgba(255, 255, 255, 0.05)",
+            borderTop: "1px solid rgba(255,255,255,0.05)",
             backdropFilter: "blur(24px)",
           }}
         >
-          {/* LEFT: Track Info & Artwork */}
-          <div className="flex items-center gap-3.5 min-w-0 w-[30%]">
-            <div 
-              className="relative flex-shrink-0 cursor-pointer group/cover"
+          {/* LEFT: Track Info & Artwork — fixed width, no overflow */}
+          <div className="flex items-center gap-3 min-w-0 flex-shrink-0" style={{ width: "28%" }}>
+            {/* Album art — fixed 44x44, never bigger */}
+            <div
+              className="flex-shrink-0 w-11 h-11 cursor-pointer rounded-lg overflow-hidden border border-white/10 shadow-md"
               onClick={() => setExpandedPlayerOpen(true)}
               title="Open full player"
             >
-              <img 
-                src={currentSong.image} 
+              <img
+                src={currentSong.image}
                 alt={currentSong.name}
-                className="w-13 h-13 rounded-lg object-cover shadow-md border border-white/10 group-hover/cover:brightness-110 transition-all" 
+                className="w-full h-full object-cover"
               />
             </div>
-            <div 
-              className="min-w-0 flex-1 cursor-pointer group/details"
+
+            <div
+              className="min-w-0 flex-1 cursor-pointer"
               onClick={() => setExpandedPlayerOpen(true)}
-              title="Open full player"
             >
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold text-white truncate max-w-[180px] hover:underline transition-colors">
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-semibold text-white truncate">
                   {currentSong.name}
                 </p>
                 {isRadioMode && (
-                  <span className="px-1.5 py-0.5 rounded bg-white/10 text-[8px] font-bold text-white leading-none tracking-wider uppercase flex-shrink-0 border border-white/10">
+                  <span className="flex-shrink-0 px-1.5 py-0.5 rounded bg-white/10 text-[8px] font-bold text-white uppercase tracking-wider border border-white/10">
                     Radio
                   </span>
                 )}
               </div>
-              <p className="text-xs text-white/50 truncate hover:text-white/80 transition-colors mt-0.5">
-                {currentSong.artist}
-              </p>
+              <p className="text-xs text-white/50 truncate mt-0.5">{currentSong.artist}</p>
             </div>
-            <button 
+
+            <button
               onClick={handleLikeClick}
-              className={`p-2 rounded-full flex-shrink-0 transition-all hover:scale-110 active:scale-95 ${
-                isLiked ? "text-white" : "text-white/40 hover:text-white"
-              }`}
+              className={`flex-shrink-0 p-1.5 rounded-full transition-all hover:scale-110 active:scale-95 ${isLiked ? "text-white" : "text-white/40 hover:text-white"}`}
               title={isLiked ? "Remove from Liked Songs" : "Save to Liked Songs"}
             >
-              <Heart size={17} className={isLiked ? "fill-white text-white" : ""} />
+              <Heart size={16} className={isLiked ? "fill-white text-white" : ""} />
             </button>
           </div>
 
-          {/* CENTER: Main Controls & Scrubber */}
-          <div className="flex flex-col items-center justify-center flex-1 gap-1.5 max-w-[40%]">
-            {/* Control buttons row */}
+          {/* CENTER: Controls + Scrubber */}
+          <div className="flex flex-col items-center justify-center gap-1.5 flex-1 min-w-0">
+            {/* Control buttons */}
             <div className="flex items-center gap-5">
-              <button 
+              <button
                 onClick={() => setIsShuffled(!isShuffled)}
-                className={`transition-all hover:scale-110 relative ${isShuffled ? "text-white font-bold" : "text-white/40 hover:text-white"}`}
-                title={isShuffled ? "Shuffle active" : "Shuffle"}
+                className={`transition-all hover:scale-110 relative ${isShuffled ? "text-white" : "text-white/40 hover:text-white"}`}
+                title="Shuffle"
               >
                 <Shuffle size={16} />
                 {isShuffled && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-white rounded-full" />}
               </button>
 
-              <button 
-                onClick={prev} 
-                className="text-white/70 hover:text-white transition-all hover:scale-110 active:scale-90"
-                title="Previous track"
-              >
+              <button onClick={prev} className="text-white/70 hover:text-white transition-all hover:scale-110 active:scale-90" title="Previous">
                 <SkipBack size={20} />
               </button>
 
-              <button 
+              <button
                 onClick={handlePlayPause}
-                className="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-md"
+                className="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-md flex-shrink-0"
                 title={isPlaying ? "Pause" : "Play"}
               >
                 {isPlaying ? <Pause size={17} className="fill-black" /> : <Play size={17} className="fill-black ml-0.5" />}
               </button>
 
-              <button 
-                onClick={next} 
-                className="text-white/70 hover:text-white transition-all hover:scale-110 active:scale-90"
-                title="Next track"
-              >
+              <button onClick={next} className="text-white/70 hover:text-white transition-all hover:scale-110 active:scale-90" title="Next">
                 <SkipForward size={20} />
               </button>
 
               <button
                 onClick={() => setRepeatMode(m => m === "off" ? "all" : m === "all" ? "one" : "off")}
-                className={`transition-all hover:scale-110 relative ${repeatMode !== "off" ? "text-white font-bold" : "text-white/40 hover:text-white"}`}
+                className={`transition-all hover:scale-110 relative ${repeatMode !== "off" ? "text-white" : "text-white/40 hover:text-white"}`}
                 title={`Repeat: ${repeatMode}`}
               >
                 {repeatMode === "one" ? <Repeat1 size={16} /> : <Repeat size={16} />}
@@ -230,98 +221,92 @@ export default function BottomPlayer() {
               </button>
             </div>
 
-            {/* Time & Scrubber slider */}
+            {/* Scrubber */}
             <div className="flex items-center gap-2.5 w-full text-[11px] text-white/40 font-medium">
               <span className="tabular-nums w-8 text-right select-none">{formatTime(currentTime)}</span>
               <div className="relative flex-1 h-1 group cursor-pointer">
                 <div className="absolute inset-0 rounded-full bg-white/15 group-hover:bg-white/25 transition-colors" />
-                <div 
-                  className="absolute inset-y-0 left-0 rounded-full bg-white transition-colors"
-                  style={{ width: `${progressPercent}%` }} 
+                <div
+                  className="absolute inset-y-0 left-0 rounded-full bg-white"
+                  style={{ width: `${progressPercent}%` }}
                 />
-                <input 
+                <input
                   type="range" min={0} max={duration || 100} value={currentTime}
                   onChange={(e) => seek(parseFloat(e.target.value))}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
               </div>
               <span className="tabular-nums w-8 select-none">{formatTime(duration)}</span>
             </div>
           </div>
 
-          {/* RIGHT: Extra actions + volume */}
-          <div className="flex items-center justify-end gap-1.5 w-[30%]">
-            {/* Visualizer animation when playing */}
+          {/* RIGHT: Actions + Volume */}
+          <div className="flex items-center justify-end gap-1 flex-shrink-0" style={{ width: "28%" }}>
+            {/* EQ bars when playing */}
             {isPlaying && (
-              <div className="eq-container hidden lg:flex mr-2">
+              <div className="eq-container hidden lg:flex mr-1">
                 <span className="eq-bar-1" /><span className="eq-bar-2" />
                 <span className="eq-bar-3" /><span className="eq-bar-4" />
               </div>
             )}
 
-            {/* Jam Session Button */}
+            {/* Jam Button — no glow, no blink */}
             <button
-              onClick={() => useJamStore.getState().setJamModalOpen(true)}
-              title="Tunely Jam - Real-time Listen Along"
-              className={`p-2 rounded-lg transition-all relative ${
-                useJamStore.getState().isInJam ? "text-white bg-white/10" : "text-white/40 hover:text-white hover:bg-white/5"
-              }`}
+              onClick={() => setJamModalOpen(true)}
+              title="Tunely Jam"
+              className={`p-2 rounded-lg transition-colors ${isInJam ? "text-white bg-white/10" : "text-white/40 hover:text-white hover:bg-white/5"}`}
             >
-              <Radio size={16} className={useJamStore.getState().isInJam ? "text-white animate-pulse" : ""} />
+              <Radio size={16} />
             </button>
 
-            {/* Lyrics Button */}
             <button
               onClick={toggleLyrics}
               title="Lyrics"
-              className={`p-2 rounded-lg transition-all relative ${isLyricsOpen ? "text-white bg-white/10" : "text-white/40 hover:text-white hover:bg-white/5"}`}
+              className={`p-2 rounded-lg transition-colors ${isLyricsOpen ? "text-white bg-white/10" : "text-white/40 hover:text-white hover:bg-white/5"}`}
             >
               <Mic size={16} />
             </button>
 
-            {/* Share Button */}
             <button
               onClick={() => toggleModal("share")}
               title="Share Track"
-              className={`p-2 rounded-lg transition-all ${activeModal === "share" ? "text-white bg-white/10" : "text-white/40 hover:text-white hover:bg-white/5"}`}
+              className={`p-2 rounded-lg transition-colors ${activeModal === "share" ? "text-white bg-white/10" : "text-white/40 hover:text-white hover:bg-white/5"}`}
             >
               <Share2 size={16} />
             </button>
 
-            {/* Sleep Timer Button */}
             <button
               onClick={() => toggleModal("sleep")}
               title="Sleep Timer"
-              className={`p-2 rounded-lg transition-all ${activeModal === "sleep" ? "text-white bg-white/10" : "text-white/40 hover:text-white hover:bg-white/5"}`}
+              className={`p-2 rounded-lg transition-colors ${activeModal === "sleep" ? "text-white bg-white/10" : "text-white/40 hover:text-white hover:bg-white/5"}`}
             >
               <Timer size={16} />
             </button>
 
-            {/* Queue Button */}
-            <button 
+            <button
               onClick={() => setQueueOpen(!isQueueOpen)}
-              className={`p-2 rounded-lg transition-all ${isQueueOpen ? "text-white bg-white/10" : "text-white/40 hover:text-white hover:bg-white/5"}`}
+              className={`p-2 rounded-lg transition-colors ${isQueueOpen ? "text-white bg-white/10" : "text-white/40 hover:text-white hover:bg-white/5"}`}
               title="Queue"
             >
               <ListMusic size={17} />
             </button>
 
-            {/* Volume Control */}
+            {/* Volume */}
             <div className="hidden sm:flex items-center gap-1.5 ml-1">
               <button onClick={handleMuteToggle} className="p-1.5 text-white/40 hover:text-white transition-colors" title="Mute/Unmute">
                 {isMuted || volume === 0 ? <VolumeX size={17} /> : <Volume2 size={17} />}
               </button>
               <div className="relative w-20 h-1 group cursor-pointer">
                 <div className="absolute inset-0 rounded-full bg-white/15 group-hover:bg-white/25 transition-colors" />
-                <div 
-                  className="absolute inset-y-0 left-0 rounded-full bg-white transition-colors"
-                  style={{ width: `${volumePercent}%` }} 
+                <div
+                  className="absolute inset-y-0 left-0 rounded-full bg-white"
+                  style={{ width: `${volumePercent}%` }}
                 />
-                <input 
+                <input
                   type="range" min={0} max={1} step={0.01}
                   value={isMuted ? 0 : volume}
                   onChange={(e) => { setVolume(parseFloat(e.target.value)); if (isMuted && parseFloat(e.target.value) > 0) setIsMuted(false) }}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
               </div>
             </div>
@@ -329,17 +314,16 @@ export default function BottomPlayer() {
         </div>
       </div>
 
-      {/* ── MOBILE MINI PLAYER (Floating Obsidian Bar, 64px) ── */}
+      {/* ── MOBILE MINI PLAYER — fixed 64px height, above bottom nav ── */}
       <div
-        className="fixed left-0 right-0 z-30 select-none md:hidden flex flex-col px-2"
+        className="fixed left-0 right-0 z-30 select-none md:hidden"
         style={{
-          bottom: "calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 6px)",
+          bottom: "calc(var(--mobile-bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px) + 6px)",
+          height: "64px",
         }}
       >
-        <div 
-          className="w-full h-15 rounded-xl bg-[#10111a]/95 border border-white/[0.08] shadow-2xl backdrop-blur-xl flex flex-col overflow-hidden"
-        >
-          {/* Slim progress bar at very top */}
+        <div className="mx-2 h-full rounded-xl bg-[#10111a]/95 border border-white/[0.08] shadow-2xl backdrop-blur-xl flex flex-col overflow-hidden">
+          {/* Slim progress line */}
           <div className="w-full h-[2px] bg-white/10 flex-shrink-0">
             <div
               className="h-full bg-white transition-[width]"
@@ -347,56 +331,49 @@ export default function BottomPlayer() {
             />
           </div>
 
-          {/* Mini Player Content Row */}
-          <div className="flex items-center flex-1 px-3 gap-3">
-            {/* Tap cover or text → open full-screen expanded player */}
+          {/* Content row — strictly fills remaining 62px */}
+          <div className="flex items-center flex-1 px-3 gap-2 min-h-0 overflow-hidden">
+            {/* Cover + Info → opens full player */}
             <div
-              className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer"
+              className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer"
               onClick={() => setExpandedPlayerOpen(true)}
             >
-              <img
-                src={currentSong.image}
-                alt={currentSong.name}
-                className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-white/10 shadow-sm"
-              />
+              <div className="w-9 h-9 flex-shrink-0 rounded-lg overflow-hidden border border-white/10 shadow-sm">
+                <img
+                  src={currentSong.image}
+                  alt={currentSong.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <p className="text-xs font-semibold text-white truncate leading-tight max-w-[160px]">
-                    {currentSong.name}
-                  </p>
-                  {isRadioMode && (
-                    <span className="px-1 py-0.5 rounded bg-white/10 text-[7px] font-bold text-white leading-none tracking-wider uppercase flex-shrink-0 border border-white/10">
-                      Radio
-                    </span>
-                  )}
-                </div>
+                <p className="text-xs font-semibold text-white truncate leading-tight">{currentSong.name}</p>
                 <p className="text-[10px] text-white/50 truncate mt-0.5">{currentSong.artist}</p>
               </div>
             </div>
 
             {/* Like + Play/Pause + Next */}
-            <div className="flex items-center gap-1.5 flex-shrink-0">
+            <div className="flex items-center gap-1 flex-shrink-0">
               <button
                 onClick={handleLikeClick}
-                className={`p-1.5 text-white/50 active:scale-90 transition-transform ${isLiked ? "text-white" : ""}`}
+                className={`p-2 active:scale-90 transition-transform ${isLiked ? "text-white" : "text-white/50"}`}
               >
-                <Heart size={16} className={isLiked ? "fill-white text-white" : ""} />
+                <Heart size={15} className={isLiked ? "fill-white text-white" : ""} />
               </button>
 
               <button
                 onClick={handlePlayPause}
-                className="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center transition-all active:scale-90 shadow-md"
+                className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center transition-all active:scale-90 shadow-md flex-shrink-0"
               >
                 {isPlaying
-                  ? <Pause size={15} className="fill-black" />
-                  : <Play size={15} className="fill-black ml-0.5" />}
+                  ? <Pause size={14} className="fill-black" />
+                  : <Play size={14} className="fill-black ml-0.5" />}
               </button>
 
               <button
                 onClick={next}
-                className="p-1.5 text-white/60 active:scale-90 transition-transform"
+                className="p-2 text-white/60 active:scale-90 transition-transform"
               >
-                <SkipForward size={17} />
+                <SkipForward size={16} />
               </button>
             </div>
           </div>
