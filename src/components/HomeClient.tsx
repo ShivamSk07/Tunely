@@ -8,7 +8,7 @@ import SectionRow from "@/components/SectionRow"
 import UniversalCard from "@/components/UniversalCard"
 import HomeSkeleton from "@/components/HomeSkeleton"
 import toast from "react-hot-toast"
-import { Play, Disc, Sparkles, Compass, Radio, Flame, TrendingUp } from "lucide-react"
+import { Play, Disc, Compass, TrendingUp } from "lucide-react"
 
 interface HomeClientProps {
   modules: any | null
@@ -37,7 +37,7 @@ function formatRawSongToPlayerSong(raw: any): Song {
     id: raw.id || "",
     name: raw.name || raw.title || "",
     artist: raw.subtitle || (raw.artist_map?.primary_artists?.[0]?.name) || "Unknown Artist",
-    image: (raw.image || "").replace("http://", "https://"),
+    image: extractImage(raw.image),
     streamUrl,
     duration: isNaN(duration) ? 0 : duration,
     url: raw.url || raw.perma_url || raw.link || "",
@@ -55,9 +55,10 @@ const mapRawItem = (item: any, typeFallback: string) => {
   }
 }
 
-export default function HomeClient({ modules }: HomeClientProps) {
+export default function HomeClient({ modules: initialModules }: HomeClientProps) {
   const router = useRouter()
   const setAppReady = useAppStore((state) => state.setAppReady)
+  const [modules, setModules] = React.useState<any | null>(initialModules)
   const [greeting, setGreeting] = React.useState("Good day")
   const [storyArtists, setStoryArtists] = React.useState<any[]>([])
 
@@ -67,6 +68,22 @@ export default function HomeClient({ modules }: HomeClientProps) {
   const setQueue = usePlayerStore((state) => state.setQueue)
   const play = usePlayerStore((state) => state.play)
   const pause = usePlayerStore((state) => state.pause)
+
+  // Fetch client-side if server modules were missing/null
+  React.useEffect(() => {
+    if (!modules) {
+      fetch("/api/modules?lang=hindi")
+        .then((res) => res.json())
+        .then((json) => {
+          if (json?.data) {
+            setModules(json.data)
+          } else if (json && typeof json === "object") {
+            setModules(json)
+          }
+        })
+        .catch((err) => console.warn("Client-side fallback modules fetch failed:", err))
+    }
+  }, [modules])
 
   React.useEffect(() => {
     const h = new Date().getHours()

@@ -3,28 +3,33 @@ import toast from "react-hot-toast"
 
 const updateStreak = (song: any) => {
   if (typeof window === "undefined" || !song) return
-  const today = new Date().toDateString()
-  const data = JSON.parse(localStorage.getItem('streak_data') || '{}')
+  try {
+    const today = new Date().toDateString()
+    const raw = localStorage.getItem('streak_data')
+    const data = raw ? JSON.parse(raw) : {}
 
-  data.todayCount = (data.lastDate === today ? data.todayCount : 0) + 1
-  
-  const yesterday = new Date(Date.now() - 86400000).toDateString()
-  if (data.lastDate === yesterday) {
-    data.streakDays = (data.streakDays || 0) + 1
-  } else if (data.lastDate !== today) {
-    data.streakDays = 1
+    data.todayCount = (data.lastDate === today ? data.todayCount : 0) + 1
+    
+    const yesterday = new Date(Date.now() - 86400000).toDateString()
+    if (data.lastDate === yesterday) {
+      data.streakDays = (data.streakDays || 0) + 1
+    } else if (data.lastDate !== today) {
+      data.streakDays = 1
+    }
+    data.lastDate = today
+
+    // Artist tracking — from actual played songs only
+    const artists = data.artists || {}
+    const artistName = song?.artist || song?.subtitle || ''
+    if (artistName) {
+      artists[artistName] = (artists[artistName] || 0) + 1
+    }
+    data.artists = artists
+
+    localStorage.setItem('streak_data', JSON.stringify(data))
+  } catch (err) {
+    console.warn("Could not update local listening stats:", err)
   }
-  data.lastDate = today
-
-  // Artist tracking — from actual played songs only
-  const artists = data.artists || {}
-  const artistName = song?.artist || song?.subtitle || ''
-  if (artistName) {
-    artists[artistName] = (artists[artistName] || 0) + 1
-  }
-  data.artists = artists
-
-  localStorage.setItem('streak_data', JSON.stringify(data))
 }
 
 export interface Song {

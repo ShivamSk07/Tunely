@@ -24,6 +24,8 @@ export default function SongCard({ song, onSongSelected }: SongCardProps) {
   const pause = usePlayerStore((state) => state.pause)
   const setAuthModalOpen = usePlayerStore((state) => state.setAuthModalOpen)
 
+  if (!song) return null
+
   const isCurrent = currentSong?.id === song.id
 
   interface LikedSongData {

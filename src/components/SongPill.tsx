@@ -26,6 +26,8 @@ export default function SongPill({ song, playlistId, onSongSelected }: SongPillP
   const pause = usePlayerStore((state) => state.pause)
   const setAuthModalOpen = usePlayerStore((state) => state.setAuthModalOpen)
 
+  if (!song) return null
+
   const isCurrent = currentSong?.id === song.id
 
   interface LikedSongData {

@@ -3,7 +3,7 @@
 import React from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { Play, Pause, Disc, Radio, RadioReceiver } from "lucide-react"
+import { Play, Pause, Disc, Radio } from "lucide-react"
 import { Song, usePlayerStore } from "@/store/usePlayerStore"
 import toast from "react-hot-toast"
 
@@ -23,11 +23,19 @@ function formatRawSongToPlayerSong(raw: any): Song {
     streamUrl = (urls[4]?.link || urls[urls.length - 1]?.link || "").replace("http://", "https://")
   }
   const duration = typeof raw.duration === "string" ? parseInt(raw.duration, 10) : (raw.duration || 0)
+  
+  let image = ""
+  if (typeof raw.image === "string") {
+    image = raw.image.replace("http://", "https://")
+  } else if (Array.isArray(raw.image)) {
+    image = (raw.image[2]?.link || raw.image[raw.image.length - 1]?.link || "").replace("http://", "https://")
+  }
+
   return {
     id: raw.id || "",
     name: raw.name || raw.title || "",
     artist: raw.subtitle || (raw.artist_map?.primary_artists?.[0]?.name) || "Unknown Artist",
-    image: (raw.image || "").replace("http://", "https://"),
+    image,
     streamUrl,
     duration: isNaN(duration) ? 0 : duration,
     url: raw.url || raw.perma_url || raw.link || "",
@@ -181,7 +189,7 @@ export default function UniversalCard({ id, name, subtitle, type, image, url }: 
             {isCurrentPlaying ? (
               <Pause size={16} className="fill-black text-black" />
             ) : type === "radio_station" ? (
-              <RadioReceiver size={16} className="text-black" />
+              <Radio size={16} className="text-black" />
             ) : (
               <Play size={16} className="fill-black ml-0.5 text-black" />
             )}
