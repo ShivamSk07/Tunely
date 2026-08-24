@@ -94,10 +94,11 @@ self.addEventListener("fetch", (event) => {
     caches.match(event.request).then((cached) => {
       const networkFetch = fetch(event.request)
         .then((response) => {
-          if (response.ok) {
-            caches.open(STATIC_CACHE).then((cache) =>
-              cache.put(event.request, response.clone())
-            )
+          if (response && response.ok && event.request.method === "GET" && response.type === "basic") {
+            const responseToCache = response.clone()
+            caches.open(STATIC_CACHE).then((cache) => {
+              cache.put(event.request, responseToCache).catch(() => {})
+            }).catch(() => {})
           }
           return response
         })
